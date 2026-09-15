@@ -1039,3 +1039,12 @@
 @media(max-width:600px){.operations-panel>section,.publish-setup{padding:16px;}.nav-operation-children{margin-left:8px;}}
 .admin-shell .toast {padding:0;background:transparent;color:inherit;border:0;max-width:min(480px,calc(100vw - 32px));}
 .admin-shell .toast .admin-notice {margin:0;box-shadow:0 8px 24px #0002;}
+
+/* Result selection shares the admin form tokens. */
+.operations-panel .result-options {border:0;padding:0;margin:24px 0;min-width:0;}
+.operations-panel .result-option {display:flex;align-items:flex-start;gap:14px;padding:18px;border:1px solid #d1d5db;border-radius:12px;cursor:pointer;}
+.operations-panel .result-option input {width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;}
+.result-option-copy {display:grid;gap:8px;min-width:0;overflow-wrap:anywhere;}
+.result-option-copy>span {font-size:14px;color:#4b5563;}
+.operations-panel .result-option.is-selected {border-color:#2563eb;background:#eff6ff;}
+.operations-panel .result-option.is-disabled {background:#f3f4f6;color:#6b7280;cursor:not-allowed;}

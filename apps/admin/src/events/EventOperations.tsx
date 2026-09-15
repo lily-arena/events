@@ -7,7 +7,7 @@ import {adminRequest as api} from './operations-api';
 interface Row {id:string;revision:number;activity_revision:number;current_stage_id:string;visibility:string;draft_json:string;accepting:number}
 interface Entry {id:string;message:string;status:string;revision:number;masked_json:string|null}
 interface Candidate {id:string;message:string;votes:number;confirmed:number}
-interface Preview {canTransition:boolean;blockers:string[];revision:number;activityRevision:number;candidates:Candidate[];result:{message:string}|null}
+interface Preview {canTransition:boolean;blockers:string[];revision:number;activityRevision:number;candidates:Candidate[];result:{id:string;message:string}|null}
 interface Scope {revision:number;activityRevision:number;counts:Record<string,number>}
 export function EventOperations({event,onChanged,section='overview'}:{section?:string;event:EventDraft;onChanged:(row:Row)=>void}) {
  const [row,setRow]=useState<Row|null>(null),[entries,setEntries]=useState<Entry[]>([]),[candidates,setCandidates]=useState<Candidate[]>([]);
@@ -19,9 +19,10 @@ export function EventOperations({event,onChanged,section='overview'}:{section?:s
  const [people,setPeople]=useState<{id:string;masked_json:string;entry_id:string|null;vote_id:string|null}[]>([]),[revealed,setRevealed]=useState<Record<string,string>|null>(null),[logs,setLogs]=useState<{action:string;created_at:number}[]>([]),[deleteId,setDeleteId]=useState('');
  const [scope,setScope]=useState<Scope|null>(null),[token,setToken]=useState(''),[confirmation,setConfirmation]=useState('');
  const [readiness,setReadiness]=useState<Preview|null>(null);
+ const [selectedResult,setSelectedResult]=useState(''),[savedResult,setSavedResult]=useState<Preview['result']>(null),[resultConfirm,setResultConfirm]=useState(false);
  const base='events/'+event.id;
  useEffect(()=>{let active=true;setReadiness(null);api<Preview>(base+'/transition-preview?stage='+stage).then(value=>{if(active)setReadiness(value);}).catch(()=>{if(active)setReadiness(null);});return()=>{active=false;};},[event.id,stage,row?.revision,row?.activity_revision,busy]);
- async function refresh(){const [next,list,shortlist]=await Promise.all([api<Row>(base),api<Entry[]>(base+'/entries'),api<Candidate[]>(base+'/candidates?stage=voting')]);setRow(next);setEntries(list);setCandidates(shortlist);onChanged(next);}
+ async function refresh(){const [next,list,shortlist]=await Promise.all([api<Row>(base),api<Entry[]>(base+'/entries'),api<Candidate[]>(base+'/candidates?stage=voting')]);setRow(next);setEntries(list);setCandidates(shortlist);onChanged(next);if(stagesFor(event).includes('result')){const resultPreview=await api<Preview>(base+'/transition-preview?stage=result');setSavedResult(resultPreview.result);setSelectedResult(current=>shortlist.some(c=>c.id===current&&c.confirmed)?current:resultPreview.result?.id??'');}}
  useEffect(()=>{refresh().catch(e=>setMessage(e.message));},[event.id]);
  async function run(action:()=>Promise<unknown>,success='저장했습니다.') {setBusy(true);try{await action();await refresh();setMessageTone(success.includes('확인해주세요')?'info':'success');setMessage(success);}catch(e){setMessageTone('error');setMessage(e instanceof Error?e.message:'처리하지 못했습니다.');}finally{setBusy(false);}}
  if(!row)return <p>{message||'운영 현황을 불러오고 있습니다.'}</p>;
@@ -40,10 +41,31 @@ export function EventOperations({event,onChanged,section='overview'}:{section?:s
     <label>상태<select disabled={busy} value={entry.status} onChange={e=>run(()=>api(base+'/review','POST',{entryId:entry.id,status:e.target.value,revision:entry.revision}))}>{[['pending','검토 대기'],['approved','승인'],['rejected','반려'],['candidate','후보']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
    </article>)}
   </section>
-  <section hidden={section!=='voting'&&section!=='result'}><h2>후보·투표 현황</h2><label>후보 문구<input value={candidateText} onChange={e=>setCandidateText(e.target.value)}/></label><Button disabled={busy||!candidateText.trim()} onClick={()=>run(async()=>{await api(base+'/candidate','POST',{stage:'voting',message:candidateText,revision:row.revision});setCandidateText('');})}>후보 추가</Button>{!candidates.length&&<p>지정된 후보가 없습니다.</p>}
-   {candidates.map((candidate,index)=><article key={candidate.id}><p>{index+1}. {candidate.message} · {candidate.votes}표</p><Button disabled={busy||!candidate.confirmed} onClick={()=>run(()=>api(base+'/result','POST',{revision:row.revision,stage:'result',votingStage:'voting',candidateId:candidate.id}),'결과 문구를 선택했습니다.')}>결과 문구로 선택</Button></article>)}
+  <section hidden={section!=='voting'}><h2>후보·투표 현황</h2><label>후보 문구<input value={candidateText} onChange={e=>setCandidateText(e.target.value)}/></label><Button disabled={busy||!candidateText.trim()} onClick={()=>run(async()=>{await api(base+'/candidate','POST',{stage:'voting',message:candidateText,revision:row.revision});setCandidateText('');})}>후보 추가</Button>{!candidates.length&&<p>지정된 후보가 없습니다.</p>}
+   {candidates.map((candidate,index)=><article key={candidate.id}><p>{index+1}. {candidate.message} · {candidate.votes}표</p></article>)}
    <Button disabled={busy||!candidates.length} onClick={()=>run(()=>api(base+'/confirm-candidates','POST',{stage:'voting',activityRevision:row.activity_revision}),'후보를 확정했습니다.')}>후보 확정</Button>
   </section>
+
+  <section hidden={section!=='result'}><h2>결과 선정</h2>
+   {savedResult&&<AdminNotice tone="success">선정된 문구: {savedResult.message}</AdminNotice>}
+   {!candidates.length?<AdminNotice tone="info">후보·투표에서 후보를 등록하고 확정해주세요.</AdminNotice>:<>
+    <p>총 {candidates.reduce((sum,c)=>sum+c.votes,0)}표 · 득표순</p>
+    <fieldset className="result-options"><legend>결과로 선정할 후보</legend>
+     {candidates.map((candidate,index)=><label key={candidate.id} className={`result-option${selectedResult===candidate.id?' is-selected':''}${!candidate.confirmed?' is-disabled':''}`}>
+      <input type="radio" name="result-candidate" value={candidate.id} checked={selectedResult===candidate.id} disabled={busy||!candidate.confirmed} onChange={()=>setSelectedResult(candidate.id)}/>
+      <span className="result-option-copy"><strong>{candidate.message}</strong><span>{index+1}번째 · {candidate.votes}표{!candidate.confirmed?' · 후보 미확정':''}{savedResult?.id===candidate.id?' · 선정됨':''}</span></span>
+     </label>)}
+    </fieldset>
+    {candidates.some(c=>!c.confirmed)&&<AdminNotice tone="warning">확정된 후보만 결과로 선정할 수 있습니다.</AdminNotice>}
+    <Button disabled={busy||!candidates.some(c=>c.id===selectedResult&&c.confirmed)||selectedResult===savedResult?.id} onClick={()=>setResultConfirm(true)}>결과 선정</Button>
+    <p>선정한 결과는 공개·일정에서 결과 단계로 전환하면 공개됩니다. 이미 결과 단계라면 저장 즉시 반영됩니다.</p>
+   </>}
+  </section>
+  <Modal open={resultConfirm} onOpenChange={setResultConfirm} title="결과 선정 확인" description="선택한 후보를 최종 문구로 저장합니다.">
+   <p>{candidates.find(c=>c.id===selectedResult)?.message}</p>
+   <p>{candidates.find(c=>c.id===selectedResult)?.votes??0}표</p>
+   <Button disabled={busy||!candidates.some(c=>c.id===selectedResult&&c.confirmed)} onClick={()=>run(async()=>{await api(base+'/result','POST',{revision:row.revision,stage:'result',votingStage:'voting',candidateId:selectedResult});setResultConfirm(false);},'결과 문구를 선정했습니다.')}>확인 후 선정</Button>
+  </Modal>
 
   <section hidden={section!=='settings'}><h2>이벤트 복제·보관</h2><label>새 이벤트 이름<input value={duplicateTitle} onChange={e=>setDuplicateTitle(e.target.value)}/></label><label>새 이벤트 주소<input value={duplicateSlug} onChange={e=>setDuplicateSlug(e.target.value)}/></label><Button disabled={busy||!duplicateTitle||!duplicateSlug} onClick={()=>run(()=>api(base+'/duplicate','POST',{title:duplicateTitle,slug:duplicateSlug}),'이벤트를 복제했습니다. 이벤트 목록을 다시 불러오면 확인할 수 있습니다.')}>이벤트 복제</Button><Button disabled={busy} onClick={()=>run(()=>api(base+'/archive','POST',{revision:row.revision}),'이벤트를 보관했습니다. 공개 페이지는 숨겨집니다.')}>보관</Button></section>
   <section hidden={section!=='privacy'}><h2>개인정보</h2><Button disabled={busy} onClick={()=>run(async()=>setPeople(await api(base+'/participants')),'개인정보 목록을 불러왔습니다.')}>목록 불러오기</Button>
