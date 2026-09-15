@@ -1,3 +1,7 @@
+> 최신 상태 (2026-09-15): DNS·HTTPS·Google 로그인 연결 및 Events 전용 Turnstile 키 등록 완료. 일반 브라우저의 실제 응모 검증은 대기 중입니다. FIRST SEAT는 공개되어 있지만 접수는 중지 상태입니다. 아래 초기 연결 기록은 당시 상태이며 최신 상태를 우선합니다.
+>
+> GitHub main push 완료. Vercel CLI 배포는 가능하지만 GitHub 자동 배포 연결은 저장소 접근 권한 문제로 실패했습니다. 자동 배포를 쓰려면 Vercel의 GitHub 앱에 lily-arena/events 접근 권한을 부여해야 합니다.
+
 # Events 도메인·회사 로그인 연결 안내
 
 기준: 2026-09-15. DNS와 Google OAuth는 담당자가 추후 연결한다. 기존 FIRST SEAT 서비스에는 변경하지 않는다.
