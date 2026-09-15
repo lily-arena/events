@@ -986,7 +986,9 @@
 
 /* Persistent navigation and editor controls */
 .nav-group-label {display:block;padding:24px 12px 8px;color:#666;font-size:12px;}
-.nav-event-children {padding-left:14px;}
+.nav-event {margin:16px 0 24px;}
+.nav-event-title {margin:0 0 8px;padding:8px 12px;font-size:14px;font-weight:750;line-height:1.5;color:#171717;overflow-wrap:anywhere;}
+.nav-event-children {padding-left:0;}
 .nav-operation-children {padding-left:12px;}
 .admin-sidebar nav button {text-align:left;white-space:normal;width:100%;}
 .settings-content fieldset {min-width:0;margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:12px;}
@@ -1002,7 +1004,8 @@
  .admin-sidebar nav {display:block;width:100%;overflow:visible;}
  .admin-sidebar nav button {display:block;width:100%;text-align:left;white-space:normal;min-width:0;}
  .admin-sidebar .nav-group-label {padding:12px 8px 4px;}
- .nav-event-children,.nav-operation-children {padding-left:12px;}
+ .nav-event-children {padding-left:0;}
+ .nav-operation-children {padding-left:12px;}
 }
 .event-page .module-title,.event-page .module-body {text-align:center;}
 .stage-configuration>div {display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap;}

@@ -213,7 +213,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
           <button className={view==='list'?'active':''} onClick={()=>setView('list')}>대시보드</button>
           <strong className="nav-group-label">이벤트</strong>
           {events.map(item=><div className="nav-event" key={item.id}>
-            <button onClick={()=>openEditor(item)}>{item.title}</button>
+            <h2 className="nav-event-title">{item.title}</h2>
             <div className="nav-event-children">
               <button className={selected===item.id&&view==='editor'?'active':''} onClick={()=>{if(selected===item.id)setView('editor');else openEditor(item);}}>콘텐츠 편집</button>
               <button className={selected===item.id&&view==='operations'?'nav-expanded':''} aria-expanded={selected===item.id&&view==='operations'} onClick={()=>{setSelected(item.id);setView('operations');}}>운영</button>
