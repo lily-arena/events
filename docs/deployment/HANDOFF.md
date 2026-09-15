@@ -1,4 +1,4 @@
-> 최신 상태 (2026-09-15): DNS·HTTPS·Google 로그인 연결 및 Events 전용 Turnstile 키 등록 완료. 일반 브라우저의 실제 응모 검증은 대기 중입니다. FIRST SEAT는 공개되어 있지만 접수는 중지 상태입니다. 아래 초기 연결 기록은 당시 상태이며 최신 상태를 우선합니다.
+> 최신 상태 (2026-09-15): DNS·HTTPS·Google 로그인 연결 및 Events 전용 Turnstile 키 등록 완료. 일반 브라우저의 실제 응모 성공과 서버 저장을 확인했습니다. 운영 관리자 후보 확정·투표 확인은 진행 중입니다. FIRST SEAT는 공개되어 있지만 접수는 중지 상태입니다. 아래 초기 연결 기록은 당시 상태이며 최신 상태를 우선합니다.
 >
 > GitHub main push 완료. Vercel CLI 배포는 가능하지만 GitHub 자동 배포 연결은 저장소 접근 권한 문제로 실패했습니다. 자동 배포를 쓰려면 Vercel의 GitHub 앱에 lily-arena/events 접근 권한을 부여해야 합니다.
 
@@ -120,3 +120,11 @@ Cloudflare 키 등록 대상은 [KEY_REGISTRATION.md](KEY_REGISTRATION.md)에 �
 별도 검증 이벤트: https://events.seoularena.net/ops-check-1789471771518 . 가상 정보만 입력하며 검증 완료 후 보관한다. FIRST SEAT는 페이지 공개/공모/접수 중지 상태임을 확인했다. 접수 개시는 운영자가 공개·일정에서 공모 전환을 확인해 실행한다. 회사 Google 계정 자동 등록 1건을 확인했다(개인정보 미조회).
 
 위젯은 공식 API로 생성했으며 [위젯 관리 문서](https://developers.cloudflare.com/turnstile/get-started/widget-management/api/)를 참고했다. Invisible 모드 사용 조건에 따라 공개 페이지 개인정보 처리방침 창에 [Cloudflare Turnstile 개인정보 처리 안내](https://www.cloudflare.com/turnstile-privacy-policy/) 링크를 포함했다.
+
+## 실제 응모 검증 완료
+
+사용자가 일반 브라우저에서 응모 완료 화면을 확인했고, 신규 D1의 검증 이벤트에 응모 1건·참여 정보 1건·동의 이력 2건 저장을 읽기 전용 집계로 확인했다. 실제 개인정보 원문은 조회하지 않았다. 운영 관리자에서 후보 지정·확정·투표 전환 후 실제 투표 확인을 요청했다. 검증 이벤트는 확인을 위해 유지 중이다.
+
+로컬 Workers/D1 통합 검증은 접수·동의·암호화·심사·후보 확정·투표·중복 차단·결과·이벤트별 초기화까지 통과했다. 이는 운영 서버에서 해당 전체 흐름을 완료했다는 뜻은 아니다.
+
+최종 배포 dpl_5JW7fZWH8vYoyEyzjd7aXYSwXTei: 루트 404, /admin 및 /first-seat 200, 미로그인 관리자 API 401, Google 로그인 이동 303, 외부 Origin 변경 요청 403을 확인했다. GitHub 커밋 73cd581까지 코드 반영 및 Vercel 운영 배포 완료.
