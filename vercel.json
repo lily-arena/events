@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:events",
+  "buildCommand": "npm run build:events && mv dist/events/index.html dist/events/app.html",
   "outputDirectory": "dist/events",
   "framework": null,
   "rewrites": [
@@ -13,15 +13,15 @@
     },
     {
       "source": "/admin",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/admin/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/:slug",
-      "destination": "/index.html"
+      "destination": "/app.html"
     }
   ],
   "headers": [
