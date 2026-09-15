@@ -1,0 +1,85 @@
+import { moduleNames, validSlug, type EventDraft, type PageModule, type InputField, type Stage } from './model';
+
+export class ConfigurationError extends Error {}
+const fail = (message: string): never => { throw new ConfigurationError(message); };
+const object = (value: unknown): Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : fail('설정을 확인해주세요.');
+function text(value: unknown, max: number, required = false): string {
+  if (typeof value !== 'string' || value.length > max || (required && !value.trim())) return fail('문구 길이와 필수 항목을 확인해주세요.');
+  return value;
+}
+function choice<T extends string>(value: unknown, allowed: readonly T[], fallback?: T): T {
+  if (value === undefined && fallback !== undefined) return fallback;
+  return typeof value === 'string' && allowed.includes(value as T) ? value as T : fail('선택할 수 없는 설정입니다.');
+}
+function imageUrl(value:unknown):string {
+ if(value===undefined||value==='')return '';
+ const raw=text(value,2000);let url:URL;try{url=new URL(raw);}catch{return fail('이미지 주소를 확인해주세요.');}
+ if(url.protocol!=='https:'||url.username||url.password||!/\.(png|jpe?g|webp|avif|gif)$/i.test(url.pathname))fail('HTTPS 이미지 주소(PNG·JPG·WebP·AVIF·GIF)를 입력해주세요.');
+ return raw;
+}
+function fields(value:unknown):InputField[] {
+ if(value===undefined)return [];
+ if(!Array.isArray(value)||value.length>10)fail('추가 입력 항목은 최대 10개입니다.');
+ const result=(value as unknown[]).map(item=>{const f=object(item);const id=text(f.id,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('입력 항목을 확인해주세요.');
+ const type=choice(f.type,['text','textarea','number','select'] as const);
+ if(typeof f.required!=='boolean'||!Number.isInteger(f.maxLength)||Number(f.maxLength)<1||Number(f.maxLength)>2000)fail('입력 제한을 확인해주세요.');
+ const options=Array.isArray(f.options)&&f.options.length<=30?f.options.map(o=>text(o,100,true)):[];
+ if(type==='select'&&!options.length)fail('선택지를 입력해주세요.');
+ return {id,label:text(f.label,100,true),type,required:f.required as boolean,maxLength:f.maxLength as number,options};});
+ if(new Set(result.map(f=>f.id)).size!==result.length)fail('입력 항목이 중복되었습니다.');return result;
+}
+function consents(value:unknown):import('./consents').ConsentItem[]|undefined {
+ if(value===undefined)return undefined;
+ if(!Array.isArray(value)||value.length>12)fail('동의 항목은 최대 12개입니다.');
+ const items=(value as unknown[]).map(v=>{const item=object(v),id=text(item.id,100,true);if(!/^[a-z0-9-]+$/.test(id))fail('동의 항목을 확인해주세요.');return {id,label:text(item.label,300,true),body:text(item.body,20000)};});
+ if(new Set(items.map(i=>i.id)).size!==items.length)fail('동의 항목이 중복되었습니다.');return items;
+}
+function module(value: unknown): PageModule {
+  const m = object(value);
+  // Construct an allow-listed object. Never retain arbitrary HTML, CSS or unknown fields.
+  return { id: text(m.id, 100, true), type: choice(m.type, Object.keys(moduleNames) as PageModule['type'][]),
+    consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
+    title: text(m.title, 500), body: text(m.body, 20000),
+    titleSize: choice(m.titleSize, ['h1','h2','h3','h4','body'] as const, 'h3'),
+    titleTone: choice(m.titleTone, ['default','emphasis'] as const, 'emphasis'),
+    bodyTone: choice(m.bodyTone, ['default','emphasis'] as const, 'default') };
+}
+/** Server and editor share limits. IDs, status and timestamps are assigned by the server. */
+export function validateDraft(value: unknown, id: string): EventDraft {
+  const input = object(value), pages = object(input.pages);
+  const slug = text(input.slug, 64, true);
+  if (!validSlug(slug)) fail('주소는 영문 소문자·숫자·하이픈으로 입력해주세요.');
+  const privacyPolicy=input.privacyPolicy===undefined?'':text(input.privacyPolicy,20000);
+  const contactUrl=input.contactUrl===undefined?'':text(input.contactUrl,2000);
+  if(contactUrl){let url:URL;try{url=new URL(contactUrl);}catch{fail('문의 주소를 확인해주세요.');}if(!['https:','mailto:'].includes(url!.protocol)||url!.username||url!.password)fail('문의 주소는 HTTPS 또는 이메일 링크로 입력해주세요.');}
+  const retentionDays=input.retentionDays??90;if(![30,90,180,365].includes(Number(retentionDays)))fail('개인정보 보유 기간을 확인해주세요.');
+  const maxLength = input.maxLength;
+  if (typeof maxLength !== 'number' || !Number.isInteger(maxLength) || maxLength < 1 || maxLength > 1000) fail('글자 수는 1~1000 사이로 설정해주세요.');
+  if (typeof input.allowRepeatVotes !== 'boolean') fail('중복 투표 설정을 확인해주세요.');
+  const stageOrder = input.stageOrder === undefined ? undefined : Array.isArray(input.stageOrder) && input.stageOrder.length>0 && input.stageOrder.length<=3 ? input.stageOrder.map(stage=>choice(stage,['submission','voting','result'] as const)) : fail('단계를 확인해주세요.');
+  if(stageOrder && new Set(stageOrder).size!==stageOrder.length)fail('같은 단계는 한 번만 추가할 수 있습니다.');
+  const resultPages = {} as Record<Stage, PageModule[]>;
+  for (const stage of ['submission','voting','result'] as const) {
+    const blocks = pages[stage];
+    if (!Array.isArray(blocks) || blocks.length > 30) fail('페이지당 모듈은 최대 30개입니다.');
+    const validated = (blocks as unknown[]).map(module);
+    if (new Set(validated.map(m => m.id)).size !== validated.length) fail('모듈이 중복되었습니다.');
+    for (const functional of ['form','consent','candidates','result']) {
+      if (validated.filter(m => m.type === functional).length > 1) fail('참여 기능은 페이지마다 하나씩만 넣을 수 있습니다.');
+    }
+    resultPages[stage] = validated;
+  }
+  return { id, slug, title: text(input.title, 100, true), description: text(input.description, 1000),
+    template: choice(input.template, ['first-seat','submission','voting']), pages: resultPages,
+    privacyPolicy,contactUrl,retentionDays:Number(retentionDays),stageOrder, visibility: 'draft', updatedAt: new Date().toISOString(), maxLength: maxLength as number,
+    allowRepeatVotes: input.allowRepeatVotes as boolean };
+}
+export function assertPublishable(draft: EventDraft, stage: Stage) {
+  const modules = draft.pages[stage];
+  if(!draft.privacyPolicy?.trim()||!draft.contactUrl)fail('개인정보 처리방침과 문의 주소를 입력해주세요.');
+  if (!modules.some(m => m.type === 'hero')) fail('이벤트 소개를 추가해주세요.');
+  if (stage !== 'result' && !modules.some(m => m.type === 'consent')) fail('개인정보 동의를 추가해주세요.');
+  if (stage === 'submission' && !modules.some(m => m.type === 'form')) fail('참여자 입력을 추가해주세요.');
+  if (stage === 'voting' && !modules.some(m => m.type === 'candidates')) fail('후보·투표를 추가해주세요.');
+  if (stage === 'result' && !modules.some(m => m.type === 'result')) fail('최종 결과를 추가해주세요.');
+}

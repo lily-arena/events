@@ -1,0 +1,8 @@
+{
+  "extends": "../../config/tsconfig.base.json",
+  "compilerOptions": {
+    // Vercel Edge 런타임은 Worker와 같은 Web API 집합을 쓴다. 같은 타입으로 검사한다.
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["src/**/*.ts"]
+}

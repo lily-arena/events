@@ -1,0 +1,18 @@
+{
+  "page": "SUBMITTED",
+  "locale": "ko",
+  "status": "DRAFT",
+  "body": {
+    "blocks": [
+      { "key": "hero", "type": "heading", "text": "FIRST SEAT" },
+      { "key": "headline", "type": "heading", "text": "문구가 접수되었습니다." },
+      {
+        "key": "lead",
+        "type": "paragraphs",
+        "items": ["당신이 남긴 한 문장이 서울아레나의 첫 기록이 될 수 있습니다."]
+      },
+      { "key": "back", "type": "button", "text": "돌아가기" }
+    ],
+    "internalNotes": "BUILD_SPEC P02. 이동 CTA는 돌아가기 하나만. 공유·Instagram·재응모 CTA 추가 금지."
+  }
+}

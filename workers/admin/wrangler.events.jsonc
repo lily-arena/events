@@ -1,0 +1,8 @@
+{
+ "name":"seoularena-events-admin-local",
+ "main":"src/events/index.ts",
+ "compatibility_date":"2026-09-01",
+ "workers_dev":false,
+ "vars":{"ENVIRONMENT":"local"},
+ "services":[{"binding":"DATA","service":"seoularena-events-data-local","entrypoint":"AdminEventsData"}]
+}

@@ -1,0 +1,6 @@
+{
+ "name":"seoularena-events-data","main":"src/events/index.ts","compatibility_date":"2026-09-01","workers_dev":false,
+ "vars":{"ENVIRONMENT":"production"},
+ "triggers":{"crons":["*/15 * * * *"]},
+ "d1_databases":[{"binding":"DB","database_name":"seoularena-events","database_id":"88de451a-a805-46be-b58c-486ec95c1ee7","migrations_dir":"../../migrations/events"}]
+}

@@ -1,0 +1,8 @@
+.admin-shell {--status-success-bg:#ecfdf3;--status-success-fg:#166534;--status-success-line:#86c99e;--status-error-bg:#fff1f2;--status-error-fg:#9f1239;--status-error-line:#f3a6b5;--status-warning-bg:#fffbeb;--status-warning-fg:#854d0e;--status-warning-line:#e6c56a;--status-info-bg:#eff6ff;--status-info-fg:#1e40af;--status-info-line:#a6bff0;}
+.admin-tone-success{--status-bg:var(--status-success-bg);--status-fg:var(--status-success-fg);--status-line:var(--status-success-line)}
+.admin-tone-error{--status-bg:var(--status-error-bg);--status-fg:var(--status-error-fg);--status-line:var(--status-error-line)}
+.admin-tone-warning{--status-bg:var(--status-warning-bg);--status-fg:var(--status-warning-fg);--status-line:var(--status-warning-line)}
+.admin-tone-info{--status-bg:var(--status-info-bg);--status-fg:var(--status-info-fg);--status-line:var(--status-info-line)}
+.admin-notice{display:flex;flex-direction:column;gap:6px;padding:16px 18px;margin:16px 0;background:var(--status-bg);color:var(--status-fg);border:1px solid var(--status-line);border-radius:10px;font-size:14px;line-height:1.65;overflow-wrap:anywhere;text-align:left;}
+.admin-notice strong{font-size:13px;}
+.admin-status-badge{display:inline-flex;padding:4px 10px;border-radius:6px;background:var(--status-bg);color:var(--status-fg);border:1px solid var(--status-line);font-size:13px;font-weight:600;}

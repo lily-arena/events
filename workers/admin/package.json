@@ -1,0 +1,12 @@
+{
+  "name": "@first-seat/worker-admin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@first-seat/content": "*",
+    "@first-seat/domain": "*",
+    "@first-seat/security": "*"
+  }
+}

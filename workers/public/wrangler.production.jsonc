@@ -1,0 +1,18 @@
+{
+  "name": "seoularena-events-public",
+  "main": "src/events/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "vars": {
+    "ENVIRONMENT": "production",
+    "PII_KEY_VERSION": "events-v1",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAE16fT3HsHlEPiFR"
+  },
+  "services": [
+    {
+      "binding": "DATA",
+      "service": "seoularena-events-data",
+      "entrypoint": "PublicEventsData"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Keep SQL trigger migrations stable across Windows/macOS checkouts.
+migrations/*.sql text eol=lf

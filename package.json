@@ -1,0 +1,51 @@
+{
+  "name": "seoul-arena-events",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:preview",
+    "dev:preview": "vite --config config/vite.preview.ts",
+    "dev:api": "wrangler dev --config workers/admin/wrangler.events.jsonc --config workers/data/wrangler.events.jsonc --persist-to .wrangler-events --port 8791",
+    "dev:public-api": "wrangler dev --config workers/public/wrangler.events.jsonc --persist-to .wrangler-events-public --port 8792",
+    "db:migrate:local": "wrangler d1 migrations apply seoularena-events-local --local --config workers/data/wrangler.events.jsonc --persist-to .wrangler-events",
+    "dev:keys": "node scripts/events-dev-keys.mjs",
+    "build": "npm run build:events",
+    "build:events": "vite build --config config/vite.events.ts",
+    "build:preview": "vite build --config config/vite.preview.ts",
+    "typecheck": "npm run check:events",
+    "check:events": "tsc -p config/tsconfig.preview.json && tsc -p workers/data/tsconfig.events.json && tsc -p config/tsconfig.vercel.json",
+    "check:preview": "tsc -p config/tsconfig.preview.json",
+    "test": "vitest run --config config/vitest.config.ts",
+    "test:events": "vitest run --config config/vitest.config.ts tests/unit/events-*.test.ts && python3 tests/platform/schema.py",
+    "test:integration": "node tests/platform/local-api.mjs && node tests/platform/local-flow.mjs",
+    "test:browser": "node tests/platform/browser.mjs && node tests/platform/browser-participation.mjs",
+    "deploy:data": "wrangler deploy --config workers/data/wrangler.production.jsonc",
+    "deploy:admin": "wrangler deploy --config workers/admin/wrangler.production.jsonc",
+    "deploy:public": "wrangler deploy --config workers/public/wrangler.production.jsonc"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260910.1",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.49.1",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.20.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-tabs": "^1.1.13"
+  }
+}

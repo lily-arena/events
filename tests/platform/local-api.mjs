@@ -1,0 +1,24 @@
+import { build } from 'esbuild';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import assert from 'node:assert/strict';
+await mkdir('artifacts/platform',{recursive:true});
+await build({entryPoints:['packages/event-builder/src/model.ts'],bundle:true,format:'esm',outfile:'artifacts/platform/model.mjs'});
+const {firstSeat}=await import(pathToFileURL(process.cwd()+'/artifacts/platform/model.mjs'));
+const base='http://127.0.0.1:8791/api/admin/';
+async function api(path,method='GET',body){const r=await fetch(base+path,{method,headers:{origin:'http://127.0.0.1:5190','content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const value=await r.json();assert.ok(r.ok,JSON.stringify(value));return value;}
+const session=await api('session'); assert.equal(session.local,true);
+let events=await api('events');
+if(!events.some(e=>e.slug==='first-seat')) await api('events','POST',firstSeat);
+const slug='local-check-'+Date.now();
+const created=await api('events','POST',{...firstSeat,title:'저장 검증',slug});
+const saved=await api('events/'+created.id,'PUT',{revision:created.revision,draft:{...JSON.parse(created.draft_json),title:'저장 확인 완료'}});
+assert.equal(saved.title,'저장 확인 완료');
+const fetched=await api('events/'+created.id); assert.equal(fetched.revision,2);
+const scope=await api('events/'+created.id+'/reset-scope');
+const prepared=await api('events/'+created.id+'/reset-prepare','POST',{revision:scope.revision,activityRevision:scope.activityRevision});
+await api('events/'+created.id+'/reset','POST',{token:prepared.token,confirmation:slug});
+const reset=await api('events/'+created.id);assert.equal(reset.revision,3);
+await api('events/'+created.id+'/archive','POST',{revision:3});
+await writeFile('artifacts/platform/api-results.json',JSON.stringify({checks:['local session','seed FIRST SEAT config only','create','save','get','reset scope','prepare reset','reset empty synthetic event','archive'],passed:true},null,2));
+console.log('Local Workers/D1 API checks passed. No real participation data used.');

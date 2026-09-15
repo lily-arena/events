@@ -1,0 +1,27 @@
+{
+  "page": "VOTED",
+  "locale": "ko",
+  "status": "DRAFT",
+  "body": {
+    "blocks": [
+      {
+        "key": "hero",
+        "type": "heading",
+        "text": "FIRST SEAT"
+      },
+      {
+        "key": "headline",
+        "type": "heading",
+        "text": "투표가 완료되었습니다."
+      },
+      {
+        "key": "lead",
+        "type": "paragraphs",
+        "items": [
+          "당신의 선택이 서울아레나의 첫 기록을 만듭니다."
+        ]
+      }
+    ],
+    "internalNotes": "BUILD_SPEC P04. 후보별 결과를 노출하지 않는다. 투표는 한 번뿐이라 돌아갈 곳이 없으므로 이동 버튼을 두지 않는다."
+  }
+}

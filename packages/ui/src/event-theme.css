@@ -1,0 +1,74 @@
+.event-theme-dark {
+  --ink: #fff;
+  --muted: #b5b5b5;
+  --paper: #000;
+  --soft: #111;
+  --line: #4a4a4a;
+  --event-font: "Pretendard Variable", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--event-font);
+  letter-spacing: normal;
+  color-scheme: dark;
+}
+.event-theme-dark
+  :is(h1, h2, h3, p, span, label, input, textarea, button, a, small) {
+  letter-spacing: normal;
+}
+.event-theme-dark :is(button, a, input, textarea, select):focus-visible {
+  outline-color: var(--ink);
+}
+.event-theme-dark .field {
+  font-size: 15px;
+  font-weight: 500;
+  gap: 12px;
+}
+.event-theme-dark .field :is(input, textarea, select) {
+  background: var(--soft);
+  color: var(--ink);
+  border-color: var(--line);
+  font-family: var(--event-font);
+}
+.event-theme-dark .field :is(input, textarea)::placeholder {
+  color: #999;
+  opacity: 1;
+}
+.event-theme-dark .field small {
+  color: var(--muted);
+}
+.event-theme-dark .button {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.event-theme-dark .button.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.event-theme-dark .button:hover:not(:disabled) {
+  background: #222;
+}
+.event-theme-dark .button.primary:hover:not(:disabled) {
+  background: #ddd;
+}
+.event-dialog {
+  border-color: var(--line);
+}
+.event-dialog .dialog-description {
+  color: var(--muted);
+}
+
+/* Visual size presets are shared by the public renderer and editor preview. */
+.event-theme-dark { --text-h1:40px; --text-h2:32px; --text-h3:25px; --text-h4:20px; --text-body:17px; }
+.event-page .module-title {line-height:1.5;white-space:pre-line;word-break:keep-all;margin:0 0 18px;font-weight:600;}
+.event-page .module-title.text-size-h1 {font-size:var(--text-h1);}
+.event-page .module-title.text-size-h2 {font-size:var(--text-h2);}
+.event-page .module-title.text-size-h3 {font-size:var(--text-h3);}
+.event-page .module-title.text-size-h4 {font-size:var(--text-h4);}
+.event-page .module-title.text-size-body {font-size:var(--text-body);font-weight:400;line-height:1.95;}
+.event-page .module-body {font-size:var(--text-body);line-height:1.95;margin:0 0 26px;white-space:pre-line;}
+.event-page .text-tone-default {color:var(--muted);}
+.event-page .text-tone-emphasis {color:var(--ink);}
+.event-theme-dark.embedded {--text-h1:30px;--text-h2:26px;--text-h3:22px;--text-h4:18px;--text-body:15px;}
+@media(max-width:760px){.event-theme-dark {--text-h1:30px;--text-h2:26px;--text-h3:22px;--text-h4:18px;--text-body:15px;}}

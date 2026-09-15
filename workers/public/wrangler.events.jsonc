@@ -1,0 +1,5 @@
+{
+ "name":"seoularena-events-public-local","main":"src/events/index.ts","compatibility_date":"2026-09-01","workers_dev":false,
+ "vars":{"ENVIRONMENT":"local","PII_KEY_VERSION":"local-v1"},
+ "services":[{"binding":"DATA","service":"seoularena-events-data-local","entrypoint":"PublicEventsData"}]
+}

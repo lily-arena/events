@@ -1,0 +1,72 @@
+{
+  "page": "WAITING",
+  "locale": "ko",
+  "status": "DRAFT",
+  "body": {
+    "blocks": [
+      {
+        "key": "hero",
+        "type": "heading",
+        "text": "FIRST SEAT"
+      },
+      {
+        "key": "intro",
+        "type": "paragraphs",
+        "items": [
+          "다음 단계를 준비하고 있습니다."
+        ]
+      },
+      {
+        "key": "paused_headline",
+        "type": "heading",
+        "text": "참여가 일시 중단되었습니다."
+      },
+      {
+        "key": "paused_body",
+        "type": "helper",
+        "text": "잠시 후 다시 확인해주세요."
+      },
+      {
+        "key": "waiting_submission_headline",
+        "type": "heading",
+        "text": "문구 접수를 준비하고 있습니다."
+      },
+      {
+        "key": "waiting_submission_body",
+        "type": "helper",
+        "text": "곧 첫 좌석에 새길 문장을 받습니다."
+      },
+      {
+        "key": "submission_closed_headline",
+        "type": "heading",
+        "text": "문구 접수가 종료되었습니다."
+      },
+      {
+        "key": "submission_closed_body",
+        "type": "helper",
+        "text": "보내주신 문장을 살펴보며 후보작을 준비하고 있습니다."
+      },
+      {
+        "key": "waiting_voting_headline",
+        "type": "heading",
+        "text": "투표를 준비하고 있습니다."
+      },
+      {
+        "key": "waiting_voting_body",
+        "type": "helper",
+        "text": "후보 문구가 공개되면 안내해드리겠습니다."
+      },
+      {
+        "key": "voting_closed_headline",
+        "type": "heading",
+        "text": "투표가 종료되었습니다."
+      },
+      {
+        "key": "voting_closed_body",
+        "type": "helper",
+        "text": "참여해주셔서 감사합니다. 결과를 준비하고 있습니다."
+      }
+    ],
+    "internalNotes": "대기·마감 상태 공통 화면. 상황별 문구를 운영자가 직접 고친다."
+  }
+}

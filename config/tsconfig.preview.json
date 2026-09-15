@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "jsx": "react-jsx",
+    "types": [
+      "vite/client"
+    ]
+  },
+  "include": [
+    "../apps/preview/**/*.tsx",
+    "../apps/admin/src/events/**/*",
+    "../apps/public/src/events/**/*",
+    "../packages/ui/src/**/*",
+    "../packages/event-builder/src/**/*",
+    "../apps/platform/**/*.tsx"
+  ]
+}

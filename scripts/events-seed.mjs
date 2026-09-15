@@ -1,0 +1,14 @@
+import {build} from 'esbuild';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+await mkdir('artifacts/platform',{recursive:true});
+await build({entryPoints:['packages/event-builder/src/model.ts'],bundle:true,format:'esm',outfile:'artifacts/platform/model.mjs'});
+const {firstSeat,stageNames}=await import(pathToFileURL(process.cwd()+'/artifacts/platform/model.mjs'));
+const draft={...firstSeat,id:'first-seat',visibility:'draft',updatedAt:'',contactUrl:'mailto:marketing.1@seoularena.net',privacyPolicy:'',retentionDays:90};
+await writeFile('seed/first-seat-platform.json',JSON.stringify(draft,null,2)+'\n');
+const quote=value=>"'"+value.replaceAll("'","''")+"'";
+let sql=`-- Configuration only. No participation data or credentials. FIRST SEAT starts unpublished.\nINSERT OR IGNORE INTO events(id,slug,title,draft_json,created_at,updated_at) VALUES('first-seat','first-seat','FIRST SEAT',${quote(JSON.stringify(draft))},unixepoch()*1000,unixepoch()*1000);\n`;
+for(const [index,stage] of ['submission','voting','result'].entries())sql+=`INSERT OR IGNORE INTO event_stages(event_id,id,kind,title,position,max_length) VALUES('first-seat','${stage}','${stage}',${quote(stageNames[stage])},${index},30);\n`;
+sql+="UPDATE events SET current_stage_id='submission' WHERE id='first-seat' AND current_stage_id IS NULL;\n";
+await writeFile('migrations/events/0003_first_seat.sql',sql);
+console.log('FIRST SEAT config-only draft migration generated.');

@@ -1,0 +1,8862 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "FIRST SEAT Build API",
+  "version": "3.0.0",
+  "description": "현재 캠페인은 host 설정으로 결정. body에 임의 campaign ID를 받지 않는다. Public/Admin origin은 실제 배포 시 별도 지정. 전역 제한 body 16KB, unknown fields 거절, no-store. 이 문서는 코드가 아닌 구현 계약이다."
+ },
+ "servers": [
+  {
+   "url": "https://firstseat.example.test"
+  }
+ ],
+ "paths": {
+  "/api/campaign": {
+   "get": {
+    "operationId": "getCampaign",
+    "summary": "상태·게시된 해당 Phase 콘텐츠·활성 동의문",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Campaign"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": false
+   }
+  },
+  "/api/submission-session": {
+   "post": {
+    "operationId": "submissionSession",
+    "summary": "CSRF bootstrap cookie와 token. Origin 검증, bootstrap만 X-CSRF 예외",
+    "parameters": [],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Session"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": false
+   }
+  },
+  "/api/submissions": {
+   "post": {
+    "operationId": "submit",
+    "summary": "응모 단일 batch commit",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SubmissionSuccess"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SubmissionInput"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/voter-session": {
+   "post": {
+    "operationId": "voterSession",
+    "summary": "Turnstile 후 voter cookie 발급",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Session"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VoterSessionInput"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/vote-status": {
+   "get": {
+    "operationId": "voteStatus",
+    "summary": "cookie의 현재 epoch 투표 여부",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VoteStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": false
+   }
+  },
+  "/api/candidates": {
+   "get": {
+    "operationId": "candidates",
+    "summary": "동결 공개 후보",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Candidates"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": false
+   }
+  },
+  "/api/votes": {
+   "post": {
+    "operationId": "vote",
+    "summary": "한 voter session당 한 표",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VoteSuccess"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/VoteInput"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/result": {
+   "get": {
+    "operationId": "result",
+    "summary": "게시된 결과만",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PublicResult"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [],
+    "x-idempotency": false
+   }
+  },
+  "/api/admin/me": {
+   "get": {
+    "operationId": "adminMe",
+    "summary": "권한·session 확인",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdminIdentity"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "AUTHENTICATED"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/approvals": {
+   "post": {
+    "operationId": "approve",
+    "summary": "다른 작성자의 digest를 승인",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Approval"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovalRequest"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/submissions": {
+   "get": {
+    "operationId": "reviewList",
+    "summary": "상태/문구 검색, PII 없음",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "cursor",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 100,
+       "default": 50
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "schema": {
+       "type": "string",
+       "enum": [
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "WITHDRAWN"
+       ]
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "schema": {
+       "type": "string",
+       "maxLength": 100
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReviewList"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "REVIEWER",
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/submissions/{id}": {
+   "get": {
+    "operationId": "reviewDetail",
+    "summary": "응모작 심사 상세",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReviewRow"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "REVIEWER",
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   },
+   "patch": {
+    "operationId": "reviewUpdate",
+    "summary": "낙관적 동시성 심사 저장",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "REVIEWER",
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReviewUpdate"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/shortlist": {
+   "get": {
+    "operationId": "shortlist",
+    "summary": "APPROVED 응모작 목록",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "cursor",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 100,
+       "default": 50
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReviewList"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/submissions/{id}/mask": {
+   "get": {
+    "operationId": "contactMask",
+    "summary": "기본 마스킹 또는 파기 완료",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mask"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "PII_OFFICER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/submissions/{id}/reveal": {
+   "post": {
+    "operationId": "reveal",
+    "summary": "추가 MFA·단건 grant·사유·audit 후 복호화",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Reveal"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "PII_OFFICER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RevealInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/reveal-step-up/{id}": {
+   "get": {
+    "operationId": "revealStepUp",
+    "summary": "전용 Access audience 검증 후 대상에 묶인 nonce 발급",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RevealStepUp"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "PII_OFFICER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/candidate-sets": {
+   "post": {
+    "operationId": "createSet",
+    "summary": "후보·심사 규칙 초안",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SetView"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SetDraft"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/candidate-sets/{id}": {
+   "get": {
+    "operationId": "getSet",
+    "summary": "후보 초안/동결 정보",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SetView"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   },
+   "patch": {
+    "operationId": "editSet",
+    "summary": "DRAFT만 편집",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SetView"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SetUpdate"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/candidate-sets/{id}/freeze": {
+   "post": {
+    "operationId": "freezeSet",
+    "summary": "후보 2–12개·권리·digest·승인 동결",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovedMutation"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/votes/monitor": {
+   "get": {
+    "operationId": "monitor",
+    "summary": "집계·의심표·무료량 상태",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Monitor"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/votes/risks": {
+   "get": {
+    "operationId": "risks",
+    "summary": "의심표 목록",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "cursor",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 100,
+       "default": 50
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RiskList"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/votes/{id}/decisions": {
+   "post": {
+    "operationId": "decideVote",
+    "summary": "포함/제외 append-only",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/jury-scores": {
+   "put": {
+    "operationId": "saveScore",
+    "summary": "현재 심사자 점수 저장",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "REVIEWER",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScoreInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   },
+   "get": {
+    "operationId": "listJuryScores",
+    "summary": "내가 저장한 심사 점수. 미입력과 0점을 구분한다",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "setId",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "REVIEWER",
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false
+   }
+  },
+  "/api/admin/transitions/preview": {
+   "post": {
+    "operationId": "previewTransition",
+    "summary": "업무 guard·digest·화면 요약",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TransitionPreview"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TransitionTarget"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/transitions/commit": {
+   "post": {
+    "operationId": "commitTransition",
+    "summary": "사용 중단. 공개 전환은 campaign-actions로만 수행한다",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TransitionInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ],
+    "deprecated": true
+   }
+  },
+  "/api/admin/campaign/pause": {
+   "post": {
+    "operationId": "pause",
+    "summary": "긴급중단은 Operator 가능, 해제는 Owner 및 기간 검사",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PauseInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/campaign/config": {
+   "put": {
+    "operationId": "config",
+    "summary": "설정·일정·보유기한·승인 revision",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConfigInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/results": {
+   "post": {
+    "operationId": "prepareResult",
+    "summary": "유효표·심사점수 snapshot 생성",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResultView"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ResultDraft"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/results/{id}": {
+   "get": {
+    "operationId": "getResultDraft",
+    "summary": "결과 검토 정보",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResultView"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/results/{id}/approve": {
+   "post": {
+    "operationId": "approveResult",
+    "summary": "다른 작성자 결과 승인",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovedMutation"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/results/{id}/publish": {
+   "post": {
+    "operationId": "publishResult",
+    "summary": "사용 중단. 결과 공개는 campaign-actions(PUBLISH_RESULT)로 수행한다",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovedMutation"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ],
+    "deprecated": true
+   }
+  },
+  "/api/admin/content": {
+   "get": {
+    "operationId": "contentList",
+    "summary": "페이지별 콘텐츠 버전",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentList"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   },
+   "post": {
+    "operationId": "contentCreate",
+    "summary": "사용자 기준 카피에서 초안 생성",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentVersion"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/content/{id}": {
+   "get": {
+    "operationId": "contentRead",
+    "summary": "콘텐츠 초안·승인상태",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentVersion"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   },
+   "patch": {
+    "operationId": "contentEdit",
+    "summary": "초안만 편집. 중요문구 변경 자동 분류",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ContentVersion"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ContentUpdate"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/content/{id}/preview": {
+   "get": {
+    "operationId": "contentPreview",
+    "summary": "동일 Public renderer용 비공개 DTO",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PublicContent"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/content/{id}/approve": {
+   "post": {
+    "operationId": "contentApprove",
+    "summary": "digest·정책 연결·미정값 검사",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovedMutation"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/content/{id}/publish": {
+   "post": {
+    "operationId": "contentPublish",
+    "summary": "게시 pointer 원자적 변경",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovedMutation"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/policies": {
+   "post": {
+    "operationId": "policyCreate",
+    "summary": "동의문/유의사항 신규 버전",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Policy"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "PII_OFFICER",
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PolicyDraft"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/audit": {
+   "get": {
+    "operationId": "audit",
+    "summary": "감사기록 조회, PII 원문 제외",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "cursor",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 100,
+       "default": 50
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AuditList"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "AUDITOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/deletions": {
+   "post": {
+    "operationId": "requestDeletion",
+    "summary": "권리요청/만료 파기 job",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeletionStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "PII_OFFICER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeletionInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/deletions/{id}": {
+   "get": {
+    "operationId": "deletionStatus",
+    "summary": "삭제·외부 ledger 완료 확인",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeletionStatus"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "PII_OFFICER",
+     "AUDITOR"
+    ],
+    "x-idempotency": false,
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/policies/{id}/approve": {
+   "post": {
+    "operationId": "policyApprove",
+    "summary": "정책 digest·전문·권한 승인, 실제 적용은 콘텐츠 게시 batch와 함께",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApprovedMutation"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/results/{id}/media": {
+   "put": {
+    "operationId": "resultMedia",
+    "summary": "승인된 static asset 목록의 결과 이미지·alt·caption 갱신",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     {
+      "in": "header",
+      "name": "X-CSRF-Token",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공. 캐시는 별도 명시 없으면 no-store.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Mutation"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF·challenge 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "중복·revision·상태 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력/업무 규칙 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한; Retry-After 확인",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·quota·외부 검증 장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "요청한 공개/관리 리소스를 찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Error"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "AccessJWT": []
+     }
+    ],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": true,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ResultMediaInput"
+       }
+      }
+     }
+    },
+    "servers": [
+     {
+      "url": "https://admin.firstseat.example.test"
+     }
+    ]
+   }
+  },
+  "/api/admin/dashboard": {
+   "get": {
+    "operationId": "adminDashboard",
+    "summary": "운영 현황 요약. 개인정보 없음",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "REVIEWER",
+     "OPERATOR",
+     "OWNER",
+     "AUDITOR",
+     "PII_OFFICER"
+    ],
+    "x-idempotency": false
+   }
+  },
+  "/api/admin/campaign-actions/preview": {
+   "post": {
+    "operationId": "previewCampaignAction",
+    "summary": "공개 전환 조건 확인. 변경 없음",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/admin/campaign-actions": {
+   "post": {
+    "operationId": "requestCampaignAction",
+    "summary": "공개 전환 요청 저장",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/admin/campaign-actions/{id}": {
+   "get": {
+    "operationId": "getCampaignAction",
+    "summary": "요청 상태 조회",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER",
+     "AUDITOR"
+    ],
+    "x-idempotency": false
+   }
+  },
+  "/api/admin/campaign-actions/{id}/execute": {
+   "post": {
+    "operationId": "executeCampaignAction",
+    "summary": "다른 책임자가 조건 재확인 후 원자적 실행",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "OWNER"
+    ],
+    "x-idempotency": false
+   }
+  },
+  "/api/admin/campaign-actions/{id}/cancel": {
+   "post": {
+    "operationId": "cancelCampaignAction",
+    "summary": "미실행 요청 취소",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "성공",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "201": {
+      "description": "생성됨",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "요청 형식 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "401": {
+      "description": "인증 없음/만료",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "권한·CSRF 거절",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "찾을 수 없음",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "409": {
+      "description": "조건·중복 충돌",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "입력 오류",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "429": {
+      "description": "요청 제한",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "일시중단·장애",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "security": [],
+    "x-roles": [
+     "OPERATOR",
+     "OWNER"
+    ],
+    "x-idempotency": false,
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "securitySchemes": {
+   "AccessJWT": {
+    "type": "apiKey",
+    "in": "header",
+    "name": "Cf-Access-Jwt-Assertion",
+    "description": "Edge에서 설정, 서버 서명/iss/aud/exp 검증. 클라이언트 임의 header 신뢰 금지."
+   }
+  },
+  "schemas": {
+   "Error": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "code": {
+      "type": "string"
+     },
+     "message": {
+      "type": "string"
+     },
+     "requestId": {
+      "type": "string"
+     },
+     "fieldErrors": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "field": {
+         "type": "string"
+        },
+        "message": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "field",
+        "message"
+       ]
+      }
+     }
+    },
+    "required": [
+     "code",
+     "message",
+     "requestId"
+    ]
+   },
+   "Ack": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "ok": {
+      "type": "boolean"
+     },
+     "requestId": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "ok",
+     "requestId"
+    ]
+   },
+   "Mutation": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "revision": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "requestId": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "revision",
+     "requestId"
+    ]
+   },
+   "ApprovalRequest": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "action": {
+      "type": "string",
+      "enum": [
+       "CONFIG",
+       "FREEZE",
+       "TRANSITION",
+       "VOTE_DECISION",
+       "RESULT",
+       "CONTENT",
+       "POLICY",
+       "PAUSE",
+       "EXTEND"
+      ]
+     },
+     "payloadDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+     },
+     "makerId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "reason": {
+      "type": "string",
+      "maxLength": 4000
+     }
+    },
+    "required": [
+     "action",
+     "payloadDigest",
+     "makerId",
+     "reason"
+    ]
+   },
+   "Approval": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "action": {
+      "type": "string"
+     },
+     "payloadDigest": {
+      "type": "string"
+     },
+     "makerId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "checkerId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "approvedAt": {
+      "type": "integer"
+     },
+     "expiresAt": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "action",
+     "payloadDigest",
+     "makerId",
+     "checkerId",
+     "approvedAt",
+     "expiresAt"
+    ]
+   },
+   "Session": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "csrfToken": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "integer"
+     },
+     "epoch": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "csrfToken",
+     "expiresAt",
+     "epoch"
+    ]
+   },
+   "Consent": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "policyId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "accepted": {
+      "const": true
+     }
+    },
+    "required": [
+     "policyId",
+     "accepted"
+    ]
+   },
+   "SubmissionInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+     },
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+     },
+     "phone": {
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 32
+     },
+     "email": {
+      "type": "string",
+      "format": "email",
+      "maxLength": 254
+     },
+     "configRevision": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "contentVersionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "consents": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Consent"
+      }
+     },
+     "turnstileToken": {
+      "type": "string",
+      "maxLength": 2048
+     }
+    },
+    "required": [
+     "message",
+     "name",
+     "phone",
+     "email",
+     "configRevision",
+     "contentVersionId",
+     "consents",
+     "turnstileToken"
+    ]
+   },
+   "SubmissionSuccess": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "status": {
+      "const": "accepted"
+     },
+     "redirect": {
+      "const": "/submitted"
+     },
+     "requestId": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "status",
+     "redirect",
+     "requestId"
+    ]
+   },
+   "VoteInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "candidateId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "candidateSetId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "setRevision": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "epoch": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "turnstileToken": {
+      "type": "string",
+      "maxLength": 2048
+     },
+     "contentVersionId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "required": [
+     "candidateId",
+     "candidateSetId",
+     "setRevision",
+     "epoch",
+     "turnstileToken",
+     "contentVersionId"
+    ]
+   },
+   "VoteSuccess": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "status": {
+      "const": "accepted"
+     },
+     "redirect": {
+      "const": "/voted"
+     },
+     "requestId": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "status",
+     "redirect",
+     "requestId"
+    ]
+   },
+   "VoteStatus": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "hasVoted": {
+      "type": "boolean"
+     },
+     "epoch": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "hasVoted",
+     "epoch"
+    ]
+   },
+   "Candidate": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "number": {
+      "type": "integer"
+     },
+     "message": {
+      "type": "string"
+     },
+     "order": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "number",
+     "message",
+     "order"
+    ]
+   },
+   "Candidates": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "setId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "revision": {
+      "type": "integer"
+     },
+     "epoch": {
+      "type": "integer"
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Candidate"
+      }
+     }
+    },
+    "required": [
+     "setId",
+     "revision",
+     "epoch",
+     "items"
+    ]
+   },
+   "Policy": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "version": {
+      "type": "integer"
+     },
+     "body": {
+      "type": "string"
+     },
+     "required": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "version",
+     "body",
+     "required"
+    ]
+   },
+   "ContentBlock": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "heading",
+       "paragraphs",
+       "list",
+       "label",
+       "helper",
+       "notice",
+       "button"
+      ]
+     },
+     "text": {
+      "type": "string"
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": [
+     "key",
+     "type"
+    ]
+   },
+   "ContentBody": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "blocks": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ContentBlock"
+      }
+     },
+     "internalNotes": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "blocks"
+    ]
+   },
+   "PublicContent": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "versionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "page": {
+      "type": "string"
+     },
+     "locale": {
+      "const": "ko"
+     },
+     "blocks": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ContentBlock"
+      }
+     }
+    },
+    "required": [
+     "versionId",
+     "page",
+     "locale",
+     "blocks"
+    ]
+   },
+   "Campaign": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "state": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMISSION_OPEN",
+       "SUBMISSION_CLOSED",
+       "VOTING_READY",
+       "VOTING_OPEN",
+       "VOTING_CLOSED",
+       "RESULT_READY",
+       "RESULT_PUBLISHED",
+       "ARCHIVED"
+      ]
+     },
+     "paused": {
+      "type": "boolean"
+     },
+     "revision": {
+      "type": "integer"
+     },
+     "maxMessageLength": {
+      "type": "integer"
+     },
+     "submissionStart": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "submissionEnd": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "votingStart": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "votingEnd": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "serverTime": {
+      "type": "integer"
+     },
+     "content": {
+      "$ref": "#/components/schemas/PublicContent"
+     },
+     "policies": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Policy"
+      }
+     }
+    },
+    "required": [
+     "id",
+     "state",
+     "paused",
+     "revision",
+     "maxMessageLength",
+     "submissionStart",
+     "submissionEnd",
+     "votingStart",
+     "votingEnd",
+     "serverTime",
+     "content",
+     "policies"
+    ]
+   },
+   "Media": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "alt": {
+      "type": "string"
+     },
+     "caption": {
+      "type": "string"
+     },
+     "order": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "path",
+     "alt",
+     "caption",
+     "order"
+    ]
+   },
+   "PublicResult": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "version": {
+      "type": "integer"
+     },
+     "message": {
+      "type": "string"
+     },
+     "explanation": {
+      "type": "string"
+     },
+     "publishedAt": {
+      "type": "integer"
+     },
+     "correctionNote": {
+      "type": "string"
+     },
+     "media": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Media"
+      }
+     }
+    },
+    "required": [
+     "version",
+     "message",
+     "explanation",
+     "publishedAt",
+     "media"
+    ]
+   },
+   "ReviewRow": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "message": {
+      "type": "string"
+     },
+     "acceptedAt": {
+      "type": "integer"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "APPROVED",
+       "REJECTED",
+       "WITHDRAWN"
+      ]
+     },
+     "reviewerNote": {
+      "type": "string"
+     },
+     "rowVersion": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "message",
+     "acceptedAt",
+     "status",
+     "reviewerNote",
+     "rowVersion"
+    ]
+   },
+   "ReviewList": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ReviewRow"
+      }
+     },
+     "nextCursor": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "total": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "items",
+     "nextCursor",
+     "total"
+    ]
+   },
+   "Mask": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "submissionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "name": {
+      "type": "string"
+     },
+     "phone": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     },
+     "deleted": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "submissionId",
+     "name",
+     "phone",
+     "email",
+     "deleted"
+    ]
+   },
+   "RevealInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "reason": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 500
+     },
+     "stepUpNonce": {
+      "type": "string",
+      "minLength": 16
+     }
+    },
+    "required": [
+     "reason",
+     "stepUpNonce"
+    ]
+   },
+   "Reveal": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "phone": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     },
+     "hideAt": {
+      "type": "integer"
+     },
+     "auditEventId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "required": [
+     "name",
+     "phone",
+     "email",
+     "hideAt",
+     "auditEventId"
+    ]
+   },
+   "CandidateDraft": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "submissionId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "publicMessage": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+     },
+     "number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12
+     },
+     "order": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 11
+     },
+     "rightsConfirmed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "submissionId",
+     "publicMessage",
+     "number",
+     "order",
+     "rightsConfirmed"
+    ]
+   },
+   "SetDraft": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "epoch": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "candidates": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/CandidateDraft"
+      }
+     },
+     "internalWeightBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+     },
+     "publicWeightBps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+     },
+     "tieRule": {
+      "type": "string"
+     },
+     "duplicateRule": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "epoch",
+     "candidates",
+     "internalWeightBps",
+     "publicWeightBps",
+     "tieRule",
+     "duplicateRule"
+    ]
+   },
+   "SetView": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "revision": {
+      "type": "integer"
+     },
+     "status": {
+      "type": "string"
+     },
+     "digest": {
+      "type": "string"
+     },
+     "draft": {
+      "$ref": "#/components/schemas/SetDraft"
+     }
+    },
+    "required": [
+     "id",
+     "revision",
+     "status",
+     "digest",
+     "draft"
+    ]
+   },
+   "Monitor": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "epoch": {
+      "type": "integer"
+     },
+     "asOf": {
+      "type": "integer"
+     },
+     "received": {
+      "type": "integer"
+     },
+     "included": {
+      "type": "integer"
+     },
+     "pending": {
+      "type": "integer"
+     },
+     "excluded": {
+      "type": "integer"
+     },
+     "candidates": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "candidateId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "included": {
+         "type": "integer"
+        },
+        "pending": {
+         "type": "integer"
+        },
+        "excluded": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "candidateId",
+        "included",
+        "pending",
+        "excluded"
+       ]
+      }
+     },
+     "quota": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "readsToday": {
+        "type": "integer"
+       },
+       "writesToday": {
+        "type": "integer"
+       },
+       "dbBytes": {
+        "type": "integer"
+       },
+       "measuredAt": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "readsToday",
+       "writesToday",
+       "dbBytes",
+       "measuredAt"
+      ]
+     }
+    },
+    "required": [
+     "epoch",
+     "asOf",
+     "received",
+     "included",
+     "pending",
+     "excluded",
+     "candidates",
+     "quota"
+    ]
+   },
+   "RiskRow": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "voteId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "candidateId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "acceptedAt": {
+      "type": "integer"
+     },
+     "reasonCodes": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "currentVerdict": {
+      "type": "string"
+     },
+     "decisionVersion": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "voteId",
+     "candidateId",
+     "acceptedAt",
+     "reasonCodes",
+     "currentVerdict",
+     "decisionVersion"
+    ]
+   },
+   "RiskList": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/RiskRow"
+      }
+     },
+     "nextCursor": {
+      "type": [
+       "string",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "items",
+     "nextCursor"
+    ]
+   },
+   "Decision": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "verdict": {
+      "type": "string",
+      "enum": [
+       "INCLUDED",
+       "EXCLUDED"
+      ]
+     },
+     "reason": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 2000
+     },
+     "expectedDecisionVersion": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "approvalId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "required": [
+     "verdict",
+     "reason",
+     "expectedDecisionVersion",
+     "approvalId"
+    ]
+   },
+   "Guard": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "key": {
+      "type": "string"
+     },
+     "passed": {
+      "type": "boolean"
+     },
+     "message": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "key",
+     "passed",
+     "message"
+    ]
+   },
+   "TransitionPreview": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "from": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMISSION_OPEN",
+       "SUBMISSION_CLOSED",
+       "VOTING_READY",
+       "VOTING_OPEN",
+       "VOTING_CLOSED",
+       "RESULT_READY",
+       "RESULT_PUBLISHED",
+       "ARCHIVED"
+      ]
+     },
+     "to": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMISSION_OPEN",
+       "SUBMISSION_CLOSED",
+       "VOTING_READY",
+       "VOTING_OPEN",
+       "VOTING_CLOSED",
+       "RESULT_READY",
+       "RESULT_PUBLISHED",
+       "ARCHIVED"
+      ]
+     },
+     "revision": {
+      "type": "integer"
+     },
+     "payloadDigest": {
+      "type": "string"
+     },
+     "guards": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Guard"
+      }
+     }
+    },
+    "required": [
+     "from",
+     "to",
+     "revision",
+     "payloadDigest",
+     "guards"
+    ]
+   },
+   "TransitionInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "to": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMISSION_OPEN",
+       "SUBMISSION_CLOSED",
+       "VOTING_READY",
+       "VOTING_OPEN",
+       "VOTING_CLOSED",
+       "RESULT_READY",
+       "RESULT_PUBLISHED",
+       "ARCHIVED"
+      ]
+     },
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "approvalId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "reason": {
+      "type": "string",
+      "minLength": 5
+     }
+    },
+    "required": [
+     "to",
+     "expectedRevision",
+     "approvalId",
+     "reason"
+    ]
+   },
+   "PauseInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "paused": {
+      "type": "boolean"
+     },
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "reason": {
+      "type": "string",
+      "minLength": 5
+     }
+    },
+    "required": [
+     "paused",
+     "expectedRevision",
+     "reason"
+    ]
+   },
+   "ResultDraft": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "setId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "epoch": {
+      "type": "integer"
+     },
+     "winnerCandidateId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "rationale": {
+      "type": "string",
+      "maxLength": 4000
+     },
+     "expectedRevision": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "setId",
+     "epoch",
+     "winnerCandidateId",
+     "rationale",
+     "expectedRevision"
+    ]
+   },
+   "ResultView": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "version": {
+      "type": "integer"
+     },
+     "status": {
+      "type": "string"
+     },
+     "winnerCandidateId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "tallyDigest": {
+      "type": "string"
+     },
+     "setDigest": {
+      "type": "string"
+     },
+     "rationale": {
+      "type": "string"
+     },
+     "guards": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Guard"
+      }
+     },
+     "scores": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "candidateId": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "juryBps": {
+         "type": "integer"
+        },
+        "validVotes": {
+         "type": "integer"
+        },
+        "scoreDecimal": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "candidateId",
+        "juryBps",
+        "validVotes",
+        "scoreDecimal"
+       ]
+      }
+     }
+    },
+    "required": [
+     "id",
+     "version",
+     "status",
+     "winnerCandidateId",
+     "tallyDigest",
+     "setDigest",
+     "rationale",
+     "guards",
+     "scores"
+    ]
+   },
+   "ContentInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "page": {
+      "type": "string",
+      "enum": [
+       "SUBMISSION",
+       "SUBMITTED",
+       "VOTING",
+       "VOTED",
+       "WAITING",
+       "RESULT"
+      ]
+     },
+     "locale": {
+      "const": "ko"
+     },
+     "body": {
+      "$ref": "#/components/schemas/ContentBody"
+     },
+     "policyIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     },
+     "baseVersionId": {
+      "type": [
+       "string",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "page",
+     "locale",
+     "body",
+     "policyIds",
+     "baseVersionId"
+    ]
+   },
+   "ContentVersion": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "page": {
+      "type": "string"
+     },
+     "version": {
+      "type": "integer"
+     },
+     "rowVersion": {
+      "type": "integer"
+     },
+     "status": {
+      "type": "string"
+     },
+     "digest": {
+      "type": "string"
+     },
+     "legalChange": {
+      "type": "boolean"
+     },
+     "body": {
+      "$ref": "#/components/schemas/ContentBody"
+     },
+     "policyIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    },
+    "required": [
+     "id",
+     "page",
+     "version",
+     "rowVersion",
+     "status",
+     "digest",
+     "legalChange",
+     "body",
+     "policyIds"
+    ]
+   },
+   "ContentList": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/ContentVersion"
+      }
+     }
+    },
+    "required": [
+     "items"
+    ]
+   },
+   "PolicyDraft": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "PRIVACY",
+       "WORK_LICENSE",
+       "OVERSEAS",
+       "VOTE_PRIVACY",
+       "NOTICE_SUBMISSION",
+       "NOTICE_VOTING",
+       "ELIGIBILITY"
+      ]
+     },
+     "body": {
+      "type": "string",
+      "minLength": 1
+     },
+     "required": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "kind",
+     "body",
+     "required"
+    ]
+   },
+   "Audit": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "actorId": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "action": {
+      "type": "string"
+     },
+     "targetId": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "occurredAt": {
+      "type": "integer"
+     },
+     "outcome": {
+      "type": "string"
+     },
+     "reason": {
+      "type": [
+       "string",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "id",
+     "actorId",
+     "action",
+     "targetId",
+     "occurredAt",
+     "outcome",
+     "reason"
+    ]
+   },
+   "AuditList": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Audit"
+      }
+     },
+     "nextCursor": {
+      "type": [
+       "string",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "items",
+     "nextCursor"
+    ]
+   },
+   "DeletionInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "targetId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "CONTACT",
+       "SUBMISSION",
+       "VOTER",
+       "RISK",
+       "CONSENT"
+      ]
+     },
+     "reason": {
+      "type": "string",
+      "minLength": 5
+     },
+     "dueAt": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "targetId",
+     "kind",
+     "reason",
+     "dueAt"
+    ]
+   },
+   "DeletionStatus": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "state": {
+      "type": "string"
+     },
+     "dueAt": {
+      "type": "integer"
+     },
+     "verifiedAt": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     }
+    },
+    "required": [
+     "id",
+     "state",
+     "dueAt",
+     "verifiedAt"
+    ]
+   },
+   "ConfigInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "approvalId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "maxMessageLength": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+     },
+     "submissionStart": {
+      "type": "integer"
+     },
+     "submissionEnd": {
+      "type": "integer"
+     },
+     "votingStart": {
+      "type": "integer"
+     },
+     "votingEnd": {
+      "type": "integer"
+     },
+     "absolutePiiDeadline": {
+      "type": "integer"
+     },
+     "launchConfigDigest": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "expectedRevision",
+     "approvalId",
+     "maxMessageLength",
+     "submissionStart",
+     "submissionEnd",
+     "votingStart",
+     "votingEnd",
+     "absolutePiiDeadline",
+     "launchConfigDigest"
+    ]
+   },
+   "AdminIdentity": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "roles": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "sessionExpiresAt": {
+      "type": "integer"
+     },
+     "csrfToken": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "roles",
+     "sessionExpiresAt",
+     "csrfToken"
+    ]
+   },
+   "VoterSessionInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "epoch": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "turnstileToken": {
+      "type": "string",
+      "maxLength": 2048
+     },
+     "consents": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Consent"
+      }
+     },
+     "contentVersionId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "required": [
+     "epoch",
+     "turnstileToken",
+     "contentVersionId"
+    ],
+    "description": "consents가 필요한지는 현재 정책으로 결정. 필수 정책 누락은422. 서버 receipt 저장."
+   },
+   "ReviewUpdate": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "status": {
+      "type": "string",
+      "enum": [
+       "PENDING",
+       "APPROVED",
+       "REJECTED"
+      ]
+     },
+     "reviewerNote": {
+      "type": "string",
+      "maxLength": 2000
+     },
+     "expectedVersion": {
+      "type": "integer",
+      "minimum": 1
+     }
+    },
+    "required": [
+     "status",
+     "reviewerNote",
+     "expectedVersion"
+    ]
+   },
+   "SetUpdate": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "draft": {
+      "$ref": "#/components/schemas/SetDraft"
+     }
+    },
+    "required": [
+     "expectedRevision",
+     "draft"
+    ]
+   },
+   "ApprovedMutation": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "approvalId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "reason": {
+      "type": "string",
+      "minLength": 5
+     }
+    },
+    "required": [
+     "approvalId",
+     "expectedRevision",
+     "reason"
+    ]
+   },
+   "ScoreInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "setId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "candidateId": {
+      "type": "string",
+      "format": "uuid"
+     },
+     "scoreBasisPoints": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+     },
+     "expectedVersion": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "criteria": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "additionalProperties": false,
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "score": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "key",
+        "score"
+       ]
+      }
+     }
+    },
+    "required": [
+     "setId",
+     "candidateId",
+     "scoreBasisPoints",
+     "expectedVersion",
+     "criteria"
+    ]
+   },
+   "TransitionTarget": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "to": {
+      "type": "string",
+      "enum": [
+       "DRAFT",
+       "SUBMISSION_OPEN",
+       "SUBMISSION_CLOSED",
+       "VOTING_READY",
+       "VOTING_OPEN",
+       "VOTING_CLOSED",
+       "RESULT_READY",
+       "RESULT_PUBLISHED",
+       "ARCHIVED"
+      ]
+     },
+     "expectedRevision": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "to",
+     "expectedRevision"
+    ]
+   },
+   "ContentUpdate": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "body": {
+      "$ref": "#/components/schemas/ContentBody"
+     },
+     "policyIds": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uuid"
+      }
+     }
+    },
+    "required": [
+     "expectedRevision",
+     "body",
+     "policyIds"
+    ]
+   },
+   "RevealStepUp": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "nonce": {
+      "type": "string"
+     },
+     "expiresAt": {
+      "type": "integer"
+     },
+     "submissionId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "required": [
+     "nonce",
+     "expiresAt",
+     "submissionId"
+    ]
+   },
+   "ResultMediaInput": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "media": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/Media"
+      }
+     },
+     "expectedRevision": {
+      "type": "integer"
+     },
+     "approvalId": {
+      "type": "string",
+      "format": "uuid"
+     }
+    },
+    "required": [
+     "media",
+     "expectedRevision",
+     "approvalId"
+    ]
+   }
+  }
+ }
+}
