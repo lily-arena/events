@@ -1,4 +1,5 @@
 export type ModuleType =
+  | "schedule"
   | "image"
   | "hero"
   | "intro"
@@ -12,7 +13,9 @@ export type Stage = "submission" | "voting" | "result";
 export type TextSize = "h1" | "h2" | "h3" | "h4" | "body";
 export type TextTone = "default" | "emphasis";
 export interface InputField {id:string;label:string;type:"text"|"textarea"|"number"|"select";required:boolean;maxLength:number;options:string[]}
+export interface ScheduleItem {id:string;title:string;start:string;end:string;description:string}
 export interface PageModule {
+  schedule?: ScheduleItem[];
   consents?: import("./consents").ConsentItem[];
   fields?: InputField[];
   imageAssetId?: string;
@@ -43,6 +46,7 @@ export interface EventDraft {
   allowRepeatVotes: boolean;
 }
 export const moduleNames: Record<ModuleType, string> = {
+  schedule: "일정",
   image: "이미지",
   hero: "이벤트 소개",
   intro: "이벤트 안내",

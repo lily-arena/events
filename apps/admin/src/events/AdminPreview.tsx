@@ -1,3 +1,4 @@
+import {ScheduleEditor} from './ScheduleEditor';
 import {consentItems} from '../../../../packages/event-builder/src/consents';
 import {AdminNotice,type AdminTone} from '../../../../packages/ui/src/AdminStatus';
 import { useEffect, useState, type ReactNode } from "react";
@@ -520,6 +521,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                         <small>줄을 바꾸면 문단이 나뉩니다.</small>
                       </label>
                       <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
+                      {selectedModule.type==='schedule'&&<ScheduleEditor items={selectedModule.schedule??[]} onChange={schedule=>patchModule({schedule})}/>}
                       {selectedModule.type==='form'&&<fieldset><legend>추가 입력 항목</legend>{(selectedModule.fields??[]).map((field,index)=><div key={field.id}><label className="field">항목 이름<input value={field.label} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,label:e.target.value}:f)})}/></label><label className="field">입력 방식<select value={field.type} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,type:e.target.value as typeof f.type}:f)})}><option value="text">짧은 글</option><option value="textarea">긴 글</option><option value="number">숫자</option><option value="select">선택형</option></select></label><label><input type="checkbox" checked={field.required} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,required:e.target.checked}:f)})}/>필수 입력</label><label className="field">최대 글자 수<input type="number" min="1" max="2000" value={field.maxLength} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,maxLength:Number(e.target.value)}:f)})}/></label>{field.type==='select'&&<label className="field">선택지 (줄바꿈으로 구분)<textarea value={field.options.join('\n')} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,options:e.target.value.split('\n')}:f)})}/></label>}<Button onClick={()=>patchModule({fields:selectedModule.fields!.filter((_,i)=>i!==index)})}>항목 삭제</Button></div>)}<Button disabled={(selectedModule.fields?.length??0)>=10} onClick={()=>patchModule({fields:[...(selectedModule.fields??[]),{id:crypto.randomUUID(),label:'추가 항목',type:'text',required:false,maxLength:200,options:[]}]})}>입력 항목 추가</Button></fieldset>}
                       {selectedModule.type === "form" &&
                         stage === "submission" && (
@@ -715,7 +717,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                       ...d.pages,
                       [stage]: [
                         ...d.pages[stage],
-                        { id, type, title: name, body: "내용을 입력해주세요." },
+                        { id, type, title: name, body: type==='schedule'?'':"내용을 입력해주세요.", ...(type==='schedule'?{schedule:[{id:crypto.randomUUID(),title:'접수 기간',start:'',end:'',description:''}]}:{}) },
                       ],
                     },
                   }));

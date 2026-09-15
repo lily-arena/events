@@ -34,11 +34,18 @@ function consents(value:unknown):import('./consents').ConsentItem[]|undefined {
  const items=(value as unknown[]).map(v=>{const item=object(v),id=text(item.id,100,true);if(!/^[a-z0-9-]+$/.test(id))fail('동의 항목을 확인해주세요.');return {id,label:text(item.label,300,true),body:text(item.body,20000)};});
  if(new Set(items.map(i=>i.id)).size!==items.length)fail('동의 항목이 중복되었습니다.');return items;
 }
+function schedule(value:unknown):import('./model').ScheduleItem[]|undefined {
+ if(value===undefined)return undefined;
+ if(!Array.isArray(value)||value.length>12)fail('일정은 최대 12개입니다.');
+ const date=(v:unknown)=>{const raw=text(v,10);if(raw&&(!/^\d{4}-\d{2}-\d{2}$/.test(raw)||!Number.isFinite(Date.parse(raw))||new Date(raw).toISOString().slice(0,10)!==raw))fail('일정 날짜를 확인해주세요.');return raw;};
+ const items=(value as unknown[]).map(v=>{const i=object(v),start=date(i.start),end=date(i.end);if(end&&(!start||end<start))fail('종료일은 시작일 이후로 입력해주세요.');return {id:text(i.id,100,true),title:text(i.title,100,true),start,end,description:text(i.description,500)};});
+ if(new Set(items.map(i=>i.id)).size!==items.length)fail('일정 항목이 중복되었습니다.');return items;
+}
 function module(value: unknown): PageModule {
   const m = object(value);
   // Construct an allow-listed object. Never retain arbitrary HTML, CSS or unknown fields.
   return { id: text(m.id, 100, true), type: choice(m.type, Object.keys(moduleNames) as PageModule['type'][]),
-    consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
+    schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
     title: text(m.title, 500), body: text(m.body, 20000),
     titleSize: choice(m.titleSize, ['h1','h2','h3','h4','body'] as const, 'h3'),
     titleTone: choice(m.titleTone, ['default','emphasis'] as const, 'emphasis'),

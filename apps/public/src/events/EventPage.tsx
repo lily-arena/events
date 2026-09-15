@@ -1,3 +1,4 @@
+import {EventSchedule} from '../../../../packages/ui/src/EventSchedule';
 import {consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
 import { useState, useRef } from "react";
 import type { FormEvent } from "react";
@@ -177,6 +178,8 @@ export function EventPage({
                 const items=live?live.policies.map(p=>({...p,...decodePolicy(p.body),label:decodePolicy(p.body).label??(p.kind==='privacy'?'개인정보 수집·이용에 동의합니다.':'응모작 활용에 동의합니다.')})):consentItems(module,stage).map(p=>({...p,required:1}));
                 return <section className="consent-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}><ModuleTitle module={module}/>{items.map(p=><div className="consent-row" key={p.id}><label><input type="checkbox" name="policy" value={p.id} required={!!p.required}/>{p.required?'[필수]':'[선택]'} {p.label}</label><button type="button" onClick={()=>setPolicy({id:p.id,type:'text',title:p.label,body:p.body||'동의문 내용을 입력해주세요.'})}>자세히 보기</button></div>)}</section>;
               }
+              case "schedule":
+                return <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}><ModuleTitle module={module}/><ModuleBody module={module}/><EventSchedule items={module.schedule??[]}/></section>;
               case "notices":
                 return (
                   <section

@@ -1,0 +1,5 @@
+.event-schedule {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px;list-style:none;margin:28px 0 0;padding:0;}
+.event-schedule>li {padding:24px;background:var(--soft);border-radius:var(--radius);text-align:center;min-width:0;overflow-wrap:anywhere;}
+.event-schedule h3 {font:700 18px/1.5 var(--event-font, sans-serif);color:var(--ink);margin:0 0 12px;}
+.event-schedule .event-schedule-date {font:600 16px/1.7 var(--event-font, sans-serif);color:var(--ink);margin:0;}
+.event-schedule .event-schedule-description {font:400 14px/1.7 var(--event-font, sans-serif);color:var(--muted);margin:12px 0 0;white-space:pre-line;}

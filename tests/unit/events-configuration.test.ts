@@ -22,3 +22,14 @@ describe('event configuration boundary', () => {
   expect(()=>assertPublishable(value,'submission')).toThrow('개인정보');
  });
 });
+
+describe('schedule configuration',()=>{
+ const draft=(start:string,end:string)=>({...firstSeat,pages:{...firstSeat.pages,submission:[...firstSeat.pages.submission,{id:'schedule',type:'schedule',title:'일정',body:'',schedule:[{id:'date',title:'접수',start,end,description:''}]}]}});
+ it('preserves date-only ranges and rejects invalid dates or reversed ranges',()=>{
+  expect(validateDraft(draft('2026-10-01','2026-10-15'),'id').pages.submission.at(-1)?.schedule?.[0]?.end).toBe('2026-10-15');
+  expect(()=>validateDraft(draft('2026-02-30',''),'id')).toThrow();
+  expect(()=>validateDraft(draft('2026-10-15','2026-10-01'),'id')).toThrow();
+  expect(()=>validateDraft(draft('','2026-10-01'),'id')).toThrow();
+  expect(()=>validateDraft(draft('',''),'id')).not.toThrow();
+ });
+});
