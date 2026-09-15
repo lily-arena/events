@@ -1,16 +1,17 @@
+import {seedEntries} from './local-entry-fixtures.mjs';
 import {chromium} from 'playwright';
 import {firstSeat} from '../../artifacts/platform/model.mjs';
 import assert from 'node:assert/strict';
 const base='http://127.0.0.1:8791/api/admin/events',headers={origin:'http://127.0.0.1:5190','content-type':'application/json'};
 async function api(path='',body){const r=await fetch(base+path,{method:body?'POST':'GET',headers,...(body?{body:JSON.stringify(body)}:{})});const value=await r.json();assert.ok(r.ok,JSON.stringify(value));return value;}
 let row=await api('',{...firstSeat,title:'결과 선정 검증',slug:'result-check-'+Date.now()});const path='/'+row.id;
-for(const message of ['첫 번째 후보 문구','두 번째 후보 문구']){await api(path+'/candidate',{stage:'voting',message,revision:row.revision});row=await api(path);}
+for(const entry of seedEntries(row.id,['첫 번째 후보 문구','두 번째 후보 문구'])){await api(path+'/review',{entryId:entry.id,status:'candidate',revision:1});}row=await api(path);
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1440,height:1000}});
  await page.route('**/api/admin/events',async route=>{const response=await route.fetch();await route.fulfill({response,json:(await response.json()).filter(r=>r.id===row.id)});});
  await page.goto('http://127.0.0.1:5190/admin');await page.locator('.admin-sidebar').getByRole('button',{name:'운영',exact:true}).click();await page.locator('.admin-sidebar').getByRole('button',{name:'결과 선정',exact:true}).click();
- await page.getByRole('radio').first().waitFor();assert.equal(await page.getByRole('radio').first().isDisabled(),true);assert.equal(await page.getByRole('button',{name:'후보 추가',exact:true}).isVisible(),false);
+ await page.getByRole('radio').first().waitFor();assert.equal(await page.getByRole('radio').first().isDisabled(),true);assert.equal(await page.getByRole('button',{name:'후보 추가',exact:true}).count(),0);
  await api(path+'/confirm-candidates',{stage:'voting',activityRevision:row.activity_revision});
  await page.reload();await page.locator('.admin-sidebar').getByRole('button',{name:'운영',exact:true}).click();await page.locator('.admin-sidebar').getByRole('button',{name:'결과 선정',exact:true}).click();
  await page.getByRole('radio').nth(1).check();await page.locator('.operations-panel').getByRole('button',{name:'결과 선정',exact:true}).click();

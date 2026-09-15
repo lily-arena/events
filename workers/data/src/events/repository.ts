@@ -128,6 +128,15 @@ export class EventsRepository {
   await this.get(id);
   return (await this.statement('SELECT e.*,p.id AS participant_id,p.masked_json FROM event_entries e LEFT JOIN event_participants p ON p.event_id=e.event_id AND p.entry_id=e.id WHERE e.event_id=? ORDER BY e.created_at DESC LIMIT 200',id).all()).results;
  }
+ async reviewEntries(id:string,status:string,query:string,page:number) {
+  await this.get(id);
+  if(!['all','pending','approved','rejected','candidate'].includes(status)||typeof query!=='string'||query.length>200||!Number.isSafeInteger(page)||page<1)throw new Error('검색 조건을 확인해주세요.');
+  const where="event_id=? AND (?='all' OR status=?) AND instr(lower(message),lower(?))>0";
+  const total=await this.statement('SELECT count(*) AS total FROM event_entries WHERE '+where,id,status,status,query.trim()).first<{total:number}>();
+  const count=total?.total??0,pageSize=50,current=Math.min(page,Math.max(1,Math.ceil(count/pageSize)));
+  const entries=(await this.statement('SELECT id,message,created_at,status,revision,EXISTS(SELECT 1 FROM event_candidates c WHERE c.event_id=event_entries.event_id AND c.entry_id=event_entries.id AND c.confirmed=1) AS locked FROM event_entries WHERE '+where+' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',id,status,status,query.trim(),pageSize,(current-1)*pageSize).all()).results;
+  return {entries,total:count,page:current,pageSize};
+ }
  async policies(id: string) {
   await this.get(id);
   return (await this.statement('SELECT s.stage_id,s.kind,s.required,p.id,p.version,p.body FROM stage_policies s JOIN event_policies p ON p.event_id=s.event_id AND p.id=s.policy_id WHERE s.event_id=?',id).all()).results;
@@ -183,19 +192,6 @@ export class EventsRepository {
    this.statement('UPDATE event_stages SET max_length=?,allow_repeat=? WHERE event_id=?',draft.maxLength,Number(draft.allowRepeatVotes),id),
    this.audit(id,'event.published',{revision}),
    this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
-  ]);
-  return this.get(id);
- }
- async addCandidate(id:string,stageId:string,message:string,revision:number) {
-  await this.get(id);
-  if(typeof message!=='string'||!message.trim()||message.length>1000)throw new Error('후보 문구를 확인해주세요.');
-  const guard=crypto.randomUUID();
-  await this.db.batch([
-   this.statement("UPDATE events SET revision=revision+1 WHERE id=? AND revision=? AND NOT EXISTS(SELECT 1 FROM event_candidates WHERE event_id=? AND stage_id=? AND confirmed=1)",id,revision,id,stageId),
-   this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
-   this.statement("INSERT INTO event_candidates(event_id,stage_id,round,id,message,position) SELECT s.event_id,s.id,s.round,?,?,coalesce((SELECT max(position) FROM event_candidates WHERE event_id=s.event_id AND stage_id=s.id AND round=s.round),-1)+1 FROM event_stages s WHERE s.event_id=? AND s.id=? AND s.kind='voting'",crypto.randomUUID(),message.trim(),id,stageId),
-   this.statement('UPDATE event_operation_guards SET ok=changes() WHERE id=?',guard),
-   this.audit(id,'candidate.added',{stageId}),this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
   ]);
   return this.get(id);
  }

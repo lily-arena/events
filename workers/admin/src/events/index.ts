@@ -27,7 +27,7 @@ export default {
    const assetMatch=/^\/api\/admin\/events\/([^/]+)\/assets\/([^/]+)$/.exec(url.pathname);
    if(assetMatch&&request.method==='GET'){const asset=await env.DATA.asset(identity,assetMatch[1]!,assetMatch[2]!);if(!asset)return new Response(null,{status:404});return new Response(Uint8Array.from(atob(asset.content_base64),c=>c.charCodeAt(0)),{headers:{'Content-Type':asset.mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
    if(url.pathname==='/api/admin/session') return json({email:identity.email,local:identity.provider==='local'});
-   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(duplicate|archive|reset-scope|reset-prepare|reset|entries|policies|policy|publish|candidates|review|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|candidate|schedule|upload))?$/.exec(url.pathname);
+   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(duplicate|archive|reset-scope|reset-prepare|reset|entries|review-entries|policies|policy|publish|candidates|review|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
    if(!match) return json({error:'페이지를 찾을 수 없습니다.'},404);
    const id=match[1],action=match[2], input=body?JSON.parse(body):{};
    if(!id && request.method==='GET') return json(await env.DATA.list(identity));
@@ -40,8 +40,8 @@ export default {
    if(id && action==='reset-prepare' && request.method==='POST') return json(await env.DATA.prepareReset(identity,id,input.revision,input.activityRevision));
    if(id && action==='reset' && request.method==='POST') return json(await env.DATA.reset(identity,id,input.token,input.confirmation));
    if(id && action==='upload' && request.method==='POST')return json(await env.DATA.uploadAsset(identity,id,input.content));
-   if(id && action==='candidate' && request.method==='POST')return json(await env.DATA.addCandidate(identity,id,input.stage,input.message,input.revision));
    if(id && action==='schedule' && request.method==='POST')return json(await env.DATA.schedule(identity,id,input.stage,input.startsAt,input.endsAt,input.revision));
+   if(id && action==='review-entries' && request.method==='GET')return json(await env.DATA.reviewEntries(identity,id,url.searchParams.get('status')??'all',url.searchParams.get('q')??'',Number(url.searchParams.get('page')??1)));
    if(id && action==='entries' && request.method==='GET') return json(await env.DATA.entries(identity,id));
    if(id && action==='policies' && request.method==='GET') return json(await env.DATA.policies(identity,id));
    if(id && action==='policy' && request.method==='POST') return json(await env.DATA.savePolicy(identity,id,input.stage,input.kind,input.body,input.revision));

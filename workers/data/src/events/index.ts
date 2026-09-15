@@ -26,11 +26,11 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async resetScope(identity: Identity,id:string) {return (await this.repository(identity)).resetScope(id);}
  async prepareReset(identity: Identity,id:string,revision:number,activity:number) {return (await this.repository(identity)).prepareReset(id,revision,activity);}
  async reset(identity: Identity,id:string,token:string,confirmation:string) {return (await this.repository(identity)).reset(id,token,confirmation);}
- async addCandidate(identity:Identity,id:string,stage:string,message:string,revision:number){return (await this.repository(identity)).addCandidate(id,stage,message,revision);}
  async schedule(identity:Identity,id:string,stage:string,starts:number|null,ends:number|null,revision:number){return (await this.repository(identity)).schedule(id,stage,starts,ends,revision);}
  async uploadAsset(identity:Identity,id:string,content:string){return (await this.repository(identity)).uploadAsset(id,content);}
  async asset(identity:Identity,id:string,assetId:string){return (await this.repository(identity)).asset(id,assetId);}
  async entries(identity:Identity,id:string) {return (await this.repository(identity)).entries(id);}
+ async reviewEntries(identity:Identity,id:string,status:string,query:string,page:number){return (await this.repository(identity)).reviewEntries(id,status,query,page);}
  async policies(identity:Identity,id:string) {return (await this.repository(identity)).policies(id);}
  async savePolicy(identity:Identity,id:string,stage:string,kind:string,body:string,revision:number) {return (await this.repository(identity)).savePolicy(id,stage,kind,body,revision);}
  async publish(identity:Identity,id:string,revision:number) {return (await this.repository(identity)).publish(id,revision);}
