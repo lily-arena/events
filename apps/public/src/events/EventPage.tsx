@@ -153,7 +153,7 @@ export function EventPage({
                     key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}
                   >
                     <ModuleTitle module={live?.result?{...module,title:live.result.message}:module}/>
-                    {!live?.result && <ModuleBody module={module}/>}
+                    <ModuleBody module={module}/>
                   </section>
                 );
               default:

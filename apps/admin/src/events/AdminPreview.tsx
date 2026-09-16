@@ -569,7 +569,9 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                         제목
                         <textarea
                           aria-label="제목"
-                          value={selectedModule.title}
+                          value={selectedModule.type==='result'?'선정 문구가 자동으로 표시됩니다.':selectedModule.title}
+                          disabled={selectedModule.type==='result'}
+                          aria-describedby={selectedModule.type==='result'?'result-title-help':undefined}
                           onChange={(e) =>
                             update((d) => ({
                               ...d,
@@ -585,6 +587,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                           }
                         />
                       </label>
+                      {selectedModule.type==='result'&&<p id="result-title-help" className="field-help">제목은 운영의 결과 선정에서 확정한 문구로 자동 변경됩니다. 아래 설명은 직접 수정할 수 있으며 공개 화면에도 표시됩니다.</p>}
                       {selectedModule.type==='image'&&<>{storage?.upload&&<label className="field">이미지 업로드<input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const id=await storage.upload!(draft.id,file);patchModule({imageAssetId:id,imageUrl:''});setMessage('이미지를 업로드했습니다. 페이지를 저장해주세요.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'업로드하지 못했습니다.');}}}/></label>}<label className="field">이미지 주소<input type="url" value={selectedModule.imageUrl??''} onChange={e=>patchModule({imageUrl:e.target.value})} placeholder="https://.../image.jpg"/></label><label className="field">이미지 설명<input value={selectedModule.imageAlt??''} onChange={e=>patchModule({imageAlt:e.target.value})}/></label></>}
                       <label className="field">제목 크기<select aria-label="제목 크기" value={selectedModule.titleSize??(selectedModule.type==="hero"?"body":"h3")} onChange={e=>patchModule({titleSize:e.target.value as TextSize})}><option value="h1">H1 · 가장 크게</option><option value="h2">H2 · 크게</option><option value="h3">H3 · 중간</option><option value="h4">H4 · 작게</option><option value="body">본문 크기</option></select></label>
                       <label className="field">제목 색상<select aria-label="제목 색상" value={selectedModule.titleTone??"emphasis"} onChange={e=>patchModule({titleTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
