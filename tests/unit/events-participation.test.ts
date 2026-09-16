@@ -16,7 +16,7 @@ describe('atomic participation and duplicate voting',()=>{
  }
  async function input(eventId:string,kind:'submission'|'voting'):Promise<ParticipationInput>{
   const e=await repo.get(eventId),policies=await repo.policies(eventId);
-  return {eventId,stageId:kind,round:1,revision:e.revision,participantId:crypto.randomUUID(),kind,message:'첫 기록',candidateId:'',policyIds:policies.filter(p=>p.stage_id===kind).map(p=>p.id as string),envelope:{ciphertext:'encrypted-test',iv:'test',wrappedDek:'wrapped-test',keyVersion:'test-v1'},masked:{name:'가*'},identities:['phone','email','instagram'].map((field,i)=>({field:field as 'phone'|'email'|'instagram',hash:String(i+1).repeat(64)})),requestKey:crypto.randomUUID(),payloadHmac:'payload-test',rateHmac:'rate-test',identityKeyVersion:'test-v1'};
+  return {eventId,stageId:kind,round:1,revision:e.revision,participantId:crypto.randomUUID(),kind,message:'첫 기록',candidateId:'',policyIds:policies.filter(p=>p.stage_id===kind).map(p=>p.id as string),envelope:{ciphertext:'encrypted-test',iv:'test',wrappedDek:'wrapped-test',keyVersion:'test-v1'},masked:{name:'가*',phone:'+82*****5678',email:'p***@e******.com',instagram:kind==='voting'?'a***':''},identities:['phone','email','instagram'].map((field,i)=>({field:field as 'phone'|'email'|'instagram',hash:String(i+1).repeat(64)})),requestKey:crypto.randomUUID(),payloadHmac:'payload-test',rateHmac:'rate-test',identityKeyVersion:'test-v1'};
  }
  async function openVoting(id:string){
   const submission=await input(id,'submission');const accepted=await acceptParticipation(memory.db,submission);

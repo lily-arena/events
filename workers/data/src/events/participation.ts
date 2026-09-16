@@ -1,3 +1,5 @@
+import {formInputs} from '../../../../packages/event-builder/src/inputs';
+import type {EventDraft} from '../../../../packages/event-builder/src/model';
 import type { ParticipantEnvelope } from '../../../../packages/security/src/event-participant';
 export interface ParticipationInput {
  eventId:string; stageId:string; round:number; revision:number; participantId:string;
@@ -17,8 +19,11 @@ export async function acceptParticipation(db:D1Database,input:ParticipationInput
  if(!policies.length || policies.some(p=>p.required && !input.policyIds.includes(p.policy_id)) || input.policyIds.some(id=>!policies.some(p=>p.policy_id===id)))throw new Error('동의문을 다시 확인해주세요.');
  const message=input.message.normalize('NFC').trim();
  const length=[...new Intl.Segmenter('ko',{granularity:'grapheme'}).segment(message)].length;
- if(input.kind==='submission' && (!length || length>stage.max_length))throw new Error('응모 문구의 글자 수를 확인해주세요.');
- if(input.kind==='voting' && (input.identities.length!==3 || new Set(input.identities.map(i=>i.field)).size!==3 || input.identities.some(i=>! /^[a-f0-9]{64}$/.test(i.hash))))throw new Error('투표 정보를 확인해주세요.');
+ const draft=JSON.parse(stage.published_json) as EventDraft,form=draft.pages[input.kind].find(m=>m.type==='form');
+ const fields=form?formInputs(form,input.kind,draft.maxLength):[];
+ const messageRequired=fields.find(f=>f.binding==='message')?.required??true;
+ if(input.kind==='submission' && ((messageRequired&&!length) || length>stage.max_length))throw new Error('응모 문구의 글자 수를 확인해주세요.');
+ if(input.kind==='voting' && (input.identities.length>3 || new Set(input.identities.map(i=>i.field)).size!==input.identities.length || input.identities.some(i=>!['phone','email','instagram'].includes(i.field)||! /^[a-f0-9]{64}$/.test(i.hash)) || ['phone','email','instagram'].some(key=>!!input.masked[key]!==input.identities.some(i=>i.field===key))))throw new Error('투표 정보를 확인해주세요.');
  const id=crypto.randomUUID(),guard=crypto.randomUUID(),now=Date.now(),window=Math.floor(now/300000),result={id,kind:input.kind};
  // Rate budget is consumed even for rejected requests. No raw IP is persisted.
  const rate=await q('INSERT INTO event_rate_limits VALUES(?,?,?,1) ON CONFLICT(event_id,subject_hmac,window) DO UPDATE SET count=count+1 RETURNING count',input.eventId,input.rateHmac,window).first<{count:number}>();

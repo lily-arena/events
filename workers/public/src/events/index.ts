@@ -31,7 +31,7 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
   const module=view.event.pages[kind].find((m:{type:string})=>m.type==='form');
   const fields=module?formInputs(module,kind,view.event.maxLength):[];
   validateFormValues(fields,{...input.participant,message:input.message,...Object.fromEntries(Object.entries(input.extra??{}).map(([id,value])=>['extra:'+id,value]))});
-  const participant=validateParticipant(input.participant,kind==='voting'),participantId=crypto.randomUUID();
+  const participant=validateParticipant(input.participant,kind==='voting',module?fields:undefined),participantId=crypto.randomUUID();
   participant.extra=validateExtraFields(input.extra,fields.filter(f=>f.binding==='extra'));
   const envelope=await encryptParticipant(await importPublicKey(env.PII_PUBLIC_KEY),env.PII_KEY_VERSION,view.event.id,participantId,participant);
   if(!Array.isArray(input.policyIds)||input.policyIds.some((x:unknown)=>typeof x!=='string')||typeof input.message!=='string')return json({error:'입력 내용을 확인해주세요.'},422);

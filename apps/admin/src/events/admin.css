@@ -1090,3 +1090,9 @@
 @media(max-width:760px){.builder-layout .settings-panel {max-height:70dvh;}.builder-layout .modules-panel {max-height:40dvh;}}
 
 .settings-content .input-fields-editor fieldset>.row {flex-direction:row;flex-wrap:wrap;gap:6px;}
+.private-details {margin:0;display:grid;gap:0;}
+.private-details>div {display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid #eee;}
+.private-details>div:last-child {border-bottom:0;}
+.private-details dt {font-size:13px;color:#667085;line-height:1.6;}
+.private-details dd {margin:0;min-width:0;font-size:15px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap;}
+@media(max-width:480px){.private-details>div{grid-template-columns:1fr;gap:4px;}.private-details-dialog{padding:24px;}}

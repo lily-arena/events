@@ -3,18 +3,21 @@ import { base64Encode, base64Decode, randomBytes } from './bytes';
 import { hmacSha256Hex } from './hash';
 import { maskName, maskPhone, maskEmail } from './masking';
 export interface Participant {name:string;phone:string;email:string;instagram:string;extra?:Record<string,string>}
-export function validateParticipant(value:unknown,voting:boolean):Participant {
+export function validateParticipant(value:unknown,voting:boolean,fields?:readonly {binding:string;required:boolean}[]):Participant {
  if(!value || typeof value!=='object')throw new Error('참여자 정보를 입력해주세요.');
  const input=value as Record<string,unknown>;
- for(const key of ['phone','email',...(voting?['instagram']:['name'])])if(typeof input[key]!=='string' || (input[key] as string).length>254)throw new Error('참여자 정보를 확인해주세요.');
- const contact=checkContact({name:voting?'투표 참여자':input.name as string,phone:input.phone as string,email:input.email as string});
- const instagram=voting?(input.instagram as string).normalize('NFKC').trim().replace(/^@/,'').toLowerCase():'';
- if(voting && !/^[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?$/.test(instagram))throw new Error('인스타그램 계정명을 확인해주세요.');
- return {...contact,instagram};
+ const required=(key:string)=>fields?fields.some(f=>f.binding===key&&f.required):['phone','email',...(voting?['instagram']:['name'])].includes(key);
+ const raw=(key:string)=>{const value=input[key]??'';if(typeof value!=='string'||value.length>254||(required(key)&&!value.trim()))throw new Error('참여자 정보를 확인해주세요.');return value.trim();};
+ const name=voting?'':raw('name'),phone=raw('phone'),email=raw('email');
+ // Validate supplied values independently. Optional blanks remain blank in storage.
+ const contact=checkContact({name:name||'참여자',phone:phone||'01000000000',email:email||'empty@example.invalid'});
+ const instagram=voting?raw('instagram').normalize('NFKC').trim().replace(/^@/,'').toLowerCase():'';
+ if(instagram&&!/^[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?$/.test(instagram))throw new Error('인스타그램 계정명을 확인해주세요.');
+ return {name:name?contact.name:'',phone:phone?contact.phone:'',email:email?contact.email:'',instagram};
 }
 export async function identityHashes(secret:string,eventId:string,stageId:string,round:number,participant:Participant) {
  const normalized={phone:participant.phone,email:participant.email.toLowerCase(),instagram:participant.instagram};
- return Promise.all((['phone','email','instagram'] as const).map(async field=>({field,hash:await hmacSha256Hex(secret,JSON.stringify(['events-v1',eventId,stageId,round,field,normalized[field]]))})));
+ return Promise.all((['phone','email','instagram'] as const).filter(field=>!!normalized[field]).map(async field=>({field,hash:await hmacSha256Hex(secret,JSON.stringify(['events-v1',eventId,stageId,round,field,normalized[field]]))})));
 }
 export interface ParticipantEnvelope {ciphertext:string;wrappedDek:string;iv:string;keyVersion:string}
 const encoder=new TextEncoder();
@@ -36,7 +39,7 @@ export async function decryptParticipant(privateKey:CryptoKey,eventId:string,par
   return JSON.parse(new TextDecoder().decode(plain)) as Participant;
  }finally{new Uint8Array(raw).fill(0);}
 }
-export function maskedParticipant(p:Participant){return {name:maskName(p.name),phone:maskPhone(p.phone),email:maskEmail(p.email),instagram:p.instagram?`${p.instagram[0]}${'*'.repeat(p.instagram.length-1)}`:''};}
+export function maskedParticipant(p:Participant){return {name:p.name?maskName(p.name):'',phone:p.phone?maskPhone(p.phone):'',email:p.email?maskEmail(p.email):'',instagram:p.instagram?`${p.instagram[0]}${'*'.repeat(p.instagram.length-1)}`:''};}
 
 export function validateExtraFields(value:unknown,fields:readonly {id:string;label:string;type:string;required:boolean;maxLength:number;options:string[]}[]):Record<string,string> {
  const input=value&&typeof value==='object'?value as Record<string,unknown>:{};
