@@ -1109,3 +1109,6 @@
 .delete-ack input {width:20px;height:20px;flex-shrink:0;margin-top:2px;}
 .event-delete-dialog .field {margin:20px 0;}
 .event-delete-dialog>.button {margin:8px 8px 0 0;}
+.editor-conflict-dialog {width:min(820px,calc(100vw - 32px));}
+.editor-conflict-dialog .event-page {margin:24px 0;border-radius:12px;max-height:50vh;overflow:auto;}
+.editor-conflict-dialog .conflict-policy {white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;}

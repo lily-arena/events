@@ -1,10 +1,11 @@
+import {AdminRequestError} from './operations-api';
 import {InputFieldsEditor} from './InputFieldsEditor';
 import {formInputs} from '../../../../packages/event-builder/src/inputs';
 import {InfoCardsEditor} from './InfoCardsEditor';
 import {ScheduleEditor} from './ScheduleEditor';
 import {consentItems} from '../../../../packages/event-builder/src/consents';
 import {AdminNotice,type AdminTone} from '../../../../packages/ui/src/AdminStatus';
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Button, Modal } from "../../../../packages/ui/src";
 import {
@@ -102,6 +103,7 @@ function readDrafts(): EventDraft[] {
 }
 export interface EditorStorage {
  initialEvents: EventDraft[];
+ checkRevision?:(id:string)=>Promise<{revision:number}|null>;
  load?:(id:string)=>Promise<EventDraft>;
  publish?:(draft:EventDraft)=>Promise<EventDraft>;
  refresh?:()=>Promise<EventDraft[]>;
@@ -135,14 +137,37 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
   const event = events.find((x) => x.id === selected) ?? events[0] ?? firstSeat;
   const active = event.pages[stage].find((m) => m.id === moduleId);
   const [draft, setDraft] = useState<EventDraft>(structuredClone(event));
+  const draftRef=useRef(draft);draftRef.current=draft;
+  const [dirty,setDirty]=useState(false),[conflict,setConflict]=useState(false);
+  const [latest,setLatest]=useState<EventDraft|null>(null),[compareMine,setCompareMine]=useState(false);
+  const [pendingLeave,setPendingLeave]=useState<(()=>void)|null>(null);
+  function navigate(action:()=>void){if(saving){setNoticeTone('info');setMessage('저장이 끝난 뒤 이동해주세요.');return;}if(view==='editor'&&dirty){setPendingLeave(()=>action);return;}action();}
+  function backup(){const blob=new Blob([JSON.stringify(draftRef.current,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=draftRef.current.slug+'-draft.json';link.click();URL.revokeObjectURL(url);}
+  function finishSave(submitted:EventDraft,result:EventDraft){
+   setEvents(items=>items.map(e=>e.id===result.id?result:e));
+   if(draftRef.current.id!==submitted.id)return;
+   const changed=JSON.stringify(draftRef.current)!==JSON.stringify(submitted);
+   setDraft(current=>changed?{...current,editorRevision:result.editorRevision}:result);setDirty(changed);setSaved(!changed);setConflict(false);
+  }
+  function saveError(error:unknown,fallback:string){if(error instanceof AdminRequestError&&error.code==='EDIT_CONFLICT')setConflict(true);setNoticeTone('error');setMessage(error instanceof Error?error.message:fallback);}
+  useEffect(()=>{if(!dirty)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
+  useEffect(()=>{
+   if(view!=='editor'||!storage?.checkRevision||saving)return;
+   let active=true;
+   async function check(){if(document.visibilityState==='hidden')return;const id=draftRef.current.id;try{const state=await storage!.checkRevision!(id);if(active&&draftRef.current.id===id&&(!state||state.revision>(draftRef.current.editorRevision??0)))setConflict(true);}catch{/* Saving still checks the version on the server. */}}
+   void check();const timer=setInterval(check,15000);window.addEventListener('focus',check);
+   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',check);};
+  },[view,selected,saving,storage]);
+
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 6000);
     return () => clearTimeout(timer);
   }, [message]);
-  async function openEditor(e: EventDraft) {
+  function openEditor(e:EventDraft){navigate(()=>{void loadEditor(e);});}
+  async function loadEditor(e: EventDraft) {
     if(storage?.load){try{e=await storage.load(e.id);}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'불러오지 못했습니다.');return;}}
-    setSelected(e.id);
+    setDirty(false);setConflict(false);setLatest(null);setSelected(e.id);
     setDraft(structuredClone(e));
     setStage(stagesFor(e)[0]!);
     setModuleId("hero");
@@ -151,6 +176,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
   }
   function update(mutator: (e: EventDraft) => EventDraft) {
     setDraft((e) => mutator(e));
+    setDirty(true);
     setSaved(false);
   }
   function persist(next: EventDraft[]) {
@@ -163,22 +189,20 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
       return false;
     }
   }
-  async function publish(){if(!storage?.publish||saving)return;setSaving(true);const submitted=draft;try{const next=await storage.publish(submitted);setEvents(items=>items.map(e=>e.id===next.id?next:e));setDraft(current=>JSON.stringify(current)===JSON.stringify(submitted)?next:current);setSaved(true);setNoticeTone('success');setMessage('페이지와 동의문을 공개했습니다.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'공개하지 못했습니다.');}finally{setSaving(false);}}
+  async function publish(){if(!storage?.publish||saving||conflict)return;setSaving(true);const submitted=draft;try{const next=await storage.publish(submitted);finishSave(submitted,next);setNoticeTone('success');setMessage('페이지와 동의문을 공개했습니다.');}catch(error){saveError(error,'공개하지 못했습니다.');}finally{setSaving(false);}}
   async function save() {
-    if(saving)return;
+    if(saving||conflict)return;
     if (storage) {
       setSaving(true);const submitted=draft;
-      try {
-        const result = await storage.save(draft);
-        setEvents(events.map(e=>e.id===result.id?result:e)); setDraft(current=>JSON.stringify(current)===JSON.stringify(submitted)?result:current); setSaved(true); setNoticeTone('success');setMessage("저장했습니다.");
-      } catch(error) { setNoticeTone('error');setMessage(error instanceof Error?error.message:"저장하지 못했습니다."); } finally {setSaving(false);}
+      try {const result=await storage.save(submitted);finishSave(submitted,result);setNoticeTone('success');setMessage('저장했습니다.');}
+      catch(error){saveError(error,'저장하지 못했습니다.');}finally{setSaving(false);}
       return;
     }
     const next = events.map((e) =>
       e.id === draft.id ? { ...draft, updatedAt: "방금" } : e,
     );
     if (persist(next)) {
-      setSaved(true);
+      setDirty(false);setSaved(true);
       setMessage(
         "검토용 구성을 이 브라우저에 저장했습니다. 실제 사이트에는 반영되지 않습니다.",
       );
@@ -221,13 +245,13 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
         </a>
 
         <nav aria-label="관리자 메뉴">
-          <button className={view==='list'?'active':''} onClick={()=>setView('list')}>대시보드</button>
+          <button className={view==='list'?'active':''} onClick={()=>navigate(()=>setView('list'))}>대시보드</button>
           <strong className="nav-group-label">이벤트</strong>
           {events.map(item=><div className="nav-event" key={item.id}>
             <h2 className="nav-event-title">{item.title}</h2>
             <div className="nav-event-children">
               <button className={selected===item.id&&view==='editor'?'active':''} onClick={()=>{openEditor(item);}}>콘텐츠 편집</button>
-              <button className={selected===item.id&&view==='operations'?'nav-expanded':''} aria-expanded={selected===item.id&&view==='operations'} onClick={()=>{setSelected(item.id);setView('operations');}}>운영</button>
+              <button className={selected===item.id&&view==='operations'?'nav-expanded':''} aria-expanded={selected===item.id&&view==='operations'} onClick={()=>navigate(()=>{setSelected(item.id);setView('operations');})}>운영</button>
               {selected===item.id&&view==='operations'&&<div className="nav-operation-children">{[['overview','공개·일정'],['review','응모작 심사'],['voting','후보·투표'],['result','결과 선정'],['privacy','개인정보'],['audit','운영 기록'],['settings','설정']].map(([key,label])=><button key={key} aria-current={operationSection===key?'page':undefined} className={operationSection===key?'active':''} onClick={()=>setOperationSection(key!)}>{label}</button>)}</div>}
             </div>
           </div>)}
@@ -375,9 +399,10 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
           )}
           {view === "editor" && (
             <>
+              {conflict&&<AdminNotice tone="warning"><p>다른 운영자가 이벤트를 변경했습니다. 내 수정 내용은 유지되며, 저장·공개는 잠시 중지됩니다.</p><div className="row"><Button onClick={async()=>{try{const next=await storage!.load!(draft.id);setLatest(next);setCompareMine(false);setMessage("");}catch(error){saveError(error,'최신 내용을 불러오지 못했습니다.');}}}>최신 내용 확인</Button><Button onClick={backup}>내 초안 파일로 보관</Button></div></AdminNotice>}
               <div className="editor-heading">
                 <div>
-                  <button className="back-link" onClick={async () => {if(storage?.refresh){try{setEvents(await storage.refresh());}catch{setMessage("목록을 불러오지 못했습니다.");}}setView("list");}}>
+                  <button className="back-link" onClick={() => navigate(async () => {if(storage?.refresh){try{setEvents(await storage.refresh());}catch{setMessage("목록을 불러오지 못했습니다.");}}setView("list");})}>
                     이벤트 목록
                   </button>
                   <h1>
@@ -390,12 +415,12 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                 </div>
                 <div className="row">
                   <span className="save-status">
-                    {saved ? "저장됨" : storage ? "초안" : "검토용 초안"}
+                    {saving?"저장 중":dirty?"저장하지 않은 변경 있음":saved?"저장됨":storage?"저장된 초안":"검토용 초안"}
                   </span>
-                  <Button kind="primary" disabled={saving} onClick={save}>
+                  <Button kind="primary" disabled={saving||conflict} onClick={save}>
                     {storage ? "저장" : "검토용 저장"}
                   </Button>
-                  {storage?.publish&&<Button disabled={saving} onClick={publish}>저장 후 공개</Button>}
+                  {storage?.publish&&<Button disabled={saving||conflict} onClick={publish}>저장 후 공개</Button>}
                 </div>
               </div>
               <section className="stage-configuration"><h2>단계 구성</h2>{stagesFor(draft).map((s,i)=><div key={s}><span className="stage-order-number">{String(i+1).padStart(2,'0')}</span><strong>{stageNames[s]}</strong><Button disabled={i===0} onClick={()=>update(d=>{const order=[...stagesFor(d)];[order[i-1],order[i]]=[order[i]!,order[i-1]!];return {...d,stageOrder:order};})}>앞으로 이동</Button><Button disabled={stagesFor(draft).length===1} onClick={()=>{const order=stagesFor(draft).filter(x=>x!==s);update(d=>({...d,stageOrder:order}));if(stage===s)setStage(order[0]!);}}>단계 제외</Button></div>)}{(['submission','voting','result'] as Stage[]).filter(s=>!stagesFor(draft).includes(s)).map(s=><Button key={s} onClick={()=>update(d=>({...d,stageOrder:[...stagesFor(d),s]}))}>{stageNames[s]} 추가</Button>)}</section>
@@ -629,6 +654,15 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
       {message && (
         <div className="toast"><AdminNotice tone={noticeTone}>{message}</AdminNotice></div>
       )}
+      <Modal open={!!pendingLeave} onOpenChange={v=>{if(!v)setPendingLeave(null);}} title="저장하지 않은 변경이 있습니다." description="계속하면 이 화면의 수정 내용을 버립니다. 필요한 내용은 먼저 저장하거나 파일로 보관해주세요.">
+       <Button onClick={backup}>내 초안 파일로 보관</Button><Button onClick={()=>{const action=pendingLeave;setPendingLeave(null);setDirty(false);action?.();}}>수정 내용을 버리고 계속</Button>
+      </Modal>
+      <Modal className="editor-conflict-dialog" open={!!latest} onOpenChange={v=>{if(!v)setLatest(null);}} title="최신 내용 확인" description="내 수정 내용은 아직 변경되지 않았습니다. 필요한 내용을 보관한 뒤 최신 버전에서 다시 편집해주세요.">
+       {latest&&<><div className="row"><Button onClick={()=>setCompareMine(true)} aria-pressed={compareMine}>내 수정 화면</Button><Button onClick={()=>setCompareMine(false)} aria-pressed={!compareMine}>최신 저장 화면</Button><Button onClick={backup}>내 초안 파일로 보관</Button></div>
+       <EventPage event={compareMine?draft:latest} stage={stagesFor(compareMine?draft:latest).includes(stage)?stage:stagesFor(compareMine?draft:latest)[0]!} embedded/>
+       <h3>푸터 설정</h3><p className="conflict-policy">{(compareMine?draft:latest).privacyPolicy||'개인정보 처리방침 없음'}</p><p>{(compareMine?draft:latest).contactUrl}</p>
+       <Button onClick={()=>navigate(()=>{setDraft(structuredClone(latest));if(!stagesFor(latest).includes(stage)){setStage(stagesFor(latest)[0]!);setModuleId("hero");}setEvents(items=>items.map(e=>e.id===latest.id?latest:e));setDirty(false);setConflict(false);setSaved(true);setLatest(null);} )}>최신 버전으로 다시 편집</Button></>}
+      </Modal>
       <Modal
         open={createOpen}
         onOpenChange={setCreateOpen}
