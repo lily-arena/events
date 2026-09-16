@@ -27,7 +27,7 @@ export default {
    const assetMatch=/^\/api\/admin\/events\/([^/]+)\/assets\/([^/]+)$/.exec(url.pathname);
    if(assetMatch&&request.method==='GET'){const asset=await env.DATA.asset(identity,assetMatch[1]!,assetMatch[2]!);if(!asset)return new Response(null,{status:404});return new Response(Uint8Array.from(atob(asset.content_base64),c=>c.charCodeAt(0)),{headers:{'Content-Type':asset.mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
    if(url.pathname==='/api/admin/session') return json({email:identity.email,local:identity.provider==='local'});
-   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(duplicate|archive|reset-scope|reset-prepare|reset|entries|review-entries|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
+   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(duplicate|archive|delete-scope|delete-prepare|delete|reset-scope|reset-prepare|reset|entries|review-entries|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
    if(!match) return json({error:'페이지를 찾을 수 없습니다.'},404);
    const id=match[1],action=match[2], input=body?JSON.parse(body):{};
    if(!id && request.method==='GET') return json(await env.DATA.list(identity));
@@ -36,6 +36,9 @@ export default {
    if(id && !action && request.method==='PUT') return json(await env.DATA.save(identity,id,input.revision,input.draft));
    if(id && action==='duplicate' && request.method==='POST') return json(await env.DATA.duplicate(identity,id,input.title,input.slug),201);
    if(id && action==='archive' && request.method==='POST') return json(await env.DATA.archive(identity,id,input.revision));
+   if(id && action==='delete-scope' && request.method==='GET')return json(await env.DATA.deleteScope(identity,id));
+   if(id && action==='delete-prepare' && request.method==='POST')return json(await env.DATA.prepareDelete(identity,id,input.revision,input.activityRevision));
+   if(id && action==='delete' && request.method==='POST')return json(await env.DATA.deleteEvent(identity,id,input.token,input.confirmation));
    if(id && action==='reset-scope' && request.method==='GET') return json(await env.DATA.resetScope(identity,id));
    if(id && action==='reset-prepare' && request.method==='POST') return json(await env.DATA.prepareReset(identity,id,input.revision,input.activityRevision));
    if(id && action==='reset' && request.method==='POST') return json(await env.DATA.reset(identity,id,input.token,input.confirmation));

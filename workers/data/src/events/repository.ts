@@ -331,6 +331,38 @@ export class EventsRepository {
   return this.get(id);
  }
 
+ async deleteScope(id:string) {
+  const event=await this.get(id),counts:Record<string,number>={};
+  for(const table of DELETE_TABLES)counts[table]=(await this.statement(`SELECT count(*) AS n FROM ${table} WHERE event_id=?`,id).first<{n:number}>())?.n??0;
+  const current=await this.get(id);
+  if(event.revision!==current.revision||event.activity_revision!==current.activity_revision)throw new Error('참여 현황이 변경되었습니다. 다시 확인해주세요.');
+  return {title:event.title,slug:event.slug,revision:event.revision,activityRevision:event.activity_revision,counts};
+ }
+ async prepareDelete(id:string,revision:number,activityRevision:number) {
+  const scope=await this.deleteScope(id);
+  if(scope.revision!==revision||scope.activityRevision!==activityRevision)throw new Error('참여 현황이 변경되었습니다. 다시 확인해주세요.');
+  const token=crypto.randomUUID()+crypto.randomUUID();
+  await this.statement('INSERT INTO event_reset_tokens VALUES(?,?,?,?,?,?,?)',await sha256Hex('delete-event:'+token),id,this.actor,revision,activityRevision,JSON.stringify({operation:'delete-event',counts:scope.counts}),Date.now()+300000).run();
+  return {token,scope};
+ }
+ async deleteEvent(id:string,token:string,confirmation:string) {
+  const event=await this.get(id);
+  if(confirmation!==event.slug)throw new Error('이벤트 주소를 정확히 입력해주세요.');
+  if(typeof token!=='string'||token.length>100)throw new Error('삭제 범위를 먼저 확인해주세요.');
+  const hash=await sha256Hex('delete-event:'+token);
+  const challenge=await this.statement('SELECT expected_revision,expected_activity,scope_json FROM event_reset_tokens WHERE token_hash=? AND event_id=? AND admin_id=? AND expires_at>?',hash,id,this.actor,Date.now()).first<{expected_revision:number;expected_activity:number;scope_json:string}>();
+  if(!challenge||JSON.parse(challenge.scope_json).operation!=='delete-event')throw new Error('확인이 만료되었습니다. 삭제 범위를 다시 확인해주세요.');
+  const guard='delete-event:'+id;
+  await this.db.batch([
+   this.statement("UPDATE events SET visibility='archived',current_stage_id=NULL,revision=revision+1 WHERE id=? AND revision=? AND activity_revision=? AND EXISTS(SELECT 1 FROM event_reset_tokens WHERE token_hash=? AND event_id=? AND admin_id=? AND expires_at>?)",id,challenge.expected_revision,challenge.expected_activity,hash,id,this.actor,Date.now()),
+   this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
+   ...DELETE_TABLES.map(table=>this.statement(`DELETE FROM ${table} WHERE event_id=?`,id)),
+   this.statement('DELETE FROM events WHERE id=?',id),
+   this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
+  ]);
+  return {deleted:true,id};
+ }
+
  async resetScope(id: string) {
   const event = await this.get(id);
   const counts: Record<string, number> = {};
@@ -373,3 +405,5 @@ export class EventsRepository {
 
 // Foreign-key order, fixed allow-list. No caller can supply a table or omit the event predicate.
 const RESET_TABLES = ['event_consents','event_identity_claims','event_vote_identities','event_participants','event_results','event_votes','event_candidates','event_entries','event_requests','event_rate_limits','event_reset_tokens'] as const;
+
+const DELETE_TABLES=[...RESET_TABLES,'stage_policies','event_policies','event_assets','event_audit','event_stages'] as const;

@@ -105,7 +105,7 @@ export interface EditorStorage {
  load?:(id:string)=>Promise<EventDraft>;
  publish?:(draft:EventDraft)=>Promise<EventDraft>;
  refresh?:()=>Promise<EventDraft[]>;
- operations?: (event: EventDraft, section?: string, onChanged?: (event:EventDraft)=>void) => ReactNode;
+ operations?: (event: EventDraft, section?: string, onChanged?: (event:EventDraft)=>void, onDeleted?: (id:string)=>void) => ReactNode;
  account: string;
  local?: boolean;
  upload?: (eventId:string,file:File)=>Promise<string>;
@@ -249,7 +249,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
         <main
           className={`admin-main ${view === "editor" ? "editor-main" : ""}`}
         >
-          {view === "operations" && storage?.operations?.(event,operationSection,next=>{setEvents(items=>items.map(item=>item.id===next.id?next:item));setDraft(current=>JSON.stringify(current)===JSON.stringify(event)?structuredClone(next):current);})}
+          {view === "operations" && storage?.operations?.(event,operationSection,next=>{setEvents(items=>items.map(item=>item.id===next.id?next:item));setDraft(current=>JSON.stringify(current)===JSON.stringify(event)?structuredClone(next):current);},id=>{setEvents(items=>items.filter(item=>item.id!==id));setSelected("");setView("list");setNoticeTone("success");setMessage("이벤트를 삭제했습니다.");})}
           {view === "list" && (
             <>
               <div className="admin-page-heading">
@@ -262,11 +262,11 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
               </div>
               <div className="overview-stats">
                 <div>
-                  <span>전체 이벤트</span>
+                  <span>전체</span>
                   <strong>{events.length.toString().padStart(2, "0")}</strong>
                 </div>
                 <div>
-                  <span>공개 구성</span>
+                  <span>공개</span>
                   <strong>
                     {events
                       .filter((e) => e.visibility === "published")
@@ -392,18 +392,10 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                   <span className="save-status">
                     {saved ? "저장됨" : storage ? "초안" : "검토용 초안"}
                   </span>
-                  <Button
-                    onClick={() =>
-                      window.open(`/${draft.slug}`, "_blank")
-                    }
-                  >
-                    공개 페이지에서 테스트
-                  </Button>
                   <Button kind="primary" disabled={saving} onClick={save}>
                     {storage ? "저장" : "검토용 저장"}
                   </Button>
                   {storage?.publish&&<Button disabled={saving} onClick={publish}>저장 후 공개</Button>}
-                  {storage?.operations && <Button onClick={() => setView("operations")}>운영</Button>}
                 </div>
               </div>
               <section className="stage-configuration"><h2>단계 구성</h2>{stagesFor(draft).map((s,i)=><div key={s}><span className="stage-order-number">{String(i+1).padStart(2,'0')}</span><strong>{stageNames[s]}</strong><Button disabled={i===0} onClick={()=>update(d=>{const order=[...stagesFor(d)];[order[i-1],order[i]]=[order[i]!,order[i-1]!];return {...d,stageOrder:order};})}>앞으로 이동</Button><Button disabled={stagesFor(draft).length===1} onClick={()=>{const order=stagesFor(draft).filter(x=>x!==s);update(d=>({...d,stageOrder:order}));if(stage===s)setStage(order[0]!);}}>단계 제외</Button></div>)}{(['submission','voting','result'] as Stage[]).filter(s=>!stagesFor(draft).includes(s)).map(s=><Button key={s} onClick={()=>update(d=>({...d,stageOrder:[...stagesFor(d),s]}))}>{stageNames[s]} 추가</Button>)}</section>

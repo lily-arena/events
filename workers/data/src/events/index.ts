@@ -24,6 +24,9 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async save(identity: Identity,id:string,revision:number,input:unknown) {return (await this.repository(identity)).save(id,revision,input);}
  async duplicate(identity: Identity,id:string,title:string,slug:string) {return (await this.repository(identity)).duplicate(id,title,slug);}
  async archive(identity: Identity,id:string,revision:number) {return (await this.repository(identity)).archive(id,revision);}
+ async deleteScope(identity:Identity,id:string) {return (await this.repository(identity)).deleteScope(id);}
+ async prepareDelete(identity:Identity,id:string,revision:number,activity:number) {return (await this.repository(identity)).prepareDelete(id,revision,activity);}
+ async deleteEvent(identity:Identity,id:string,token:string,confirmation:string) {return (await this.repository(identity)).deleteEvent(id,token,confirmation);}
  async resetScope(identity: Identity,id:string) {return (await this.repository(identity)).resetScope(id);}
  async prepareReset(identity: Identity,id:string,revision:number,activity:number) {return (await this.repository(identity)).prepareReset(id,revision,activity);}
  async reset(identity: Identity,id:string,token:string,confirmation:string) {return (await this.repository(identity)).reset(id,token,confirmation);}

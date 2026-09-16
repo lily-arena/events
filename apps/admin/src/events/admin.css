@@ -1096,3 +1096,16 @@
 .private-details dt {font-size:13px;color:#667085;line-height:1.6;}
 .private-details dd {margin:0;min-width:0;font-size:15px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap;}
 @media(max-width:480px){.private-details>div{grid-template-columns:1fr;gap:4px;}.private-details-dialog{padding:24px;}}
+
+.operations-panel .event-danger-zone {border-color:#efb4b4;background:#fffafa;}
+.event-danger-zone h2 {color:#991b1b;}
+.event-danger-zone p {line-height:1.7;}
+.event-delete-dialog .danger-button {background:#b91c1c;border-color:#b91c1c;color:white;}
+.event-delete-dialog .delete-event-address {overflow-wrap:anywhere;font-size:14px;color:#6b7280;}
+.delete-scope-list {margin:20px 0;display:grid;gap:8px;}
+.delete-scope-list>div {display:flex;justify-content:space-between;gap:16px;}
+.delete-scope-list dd {margin:0;font-weight:600;}
+.event-delete-dialog .delete-ack {display:flex;align-items:flex-start;gap:10px;margin:20px 0;line-height:1.6;}
+.delete-ack input {width:20px;height:20px;flex-shrink:0;margin-top:2px;}
+.event-delete-dialog .field {margin:20px 0;}
+.event-delete-dialog>.button {margin:8px 8px 0 0;}

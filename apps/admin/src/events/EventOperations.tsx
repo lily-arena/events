@@ -1,3 +1,4 @@
+import {EventDeletion} from './EventDeletion';
 import {PrivateDetails} from './PrivateDetails';
 import {EntryReview} from './EntryReview';
 import {AdminNotice,type AdminTone} from '../../../../packages/ui/src/AdminStatus';
@@ -10,7 +11,7 @@ interface Row {id:string;revision:number;activity_revision:number;current_stage_
 interface Candidate {id:string;message:string;votes:number;confirmed:number;position:number}
 interface Preview {checks:{id:string;label:string;complete:boolean}[];stage:{starts_at:number|null;ends_at:number|null};canTransition:boolean;blockers:string[];revision:number;activityRevision:number;candidates:Candidate[];result:{id:string;message:string}|null}
 interface Scope {revision:number;activityRevision:number;counts:Record<string,number>}
-export function EventOperations({event,onChanged,section='overview'}:{section?:string;event:EventDraft;onChanged:(row:Row)=>void}) {
+export function EventOperations({event,onChanged,onDeleted,section='overview'}:{section?:string;event:EventDraft;onChanged:(row:Row)=>void;onDeleted?:(id:string)=>void}) {
  const [row,setRow]=useState<Row|null>(null),[candidates,setCandidates]=useState<Candidate[]>([]);
  const [stage,setStage]=useState<Stage>(stagesFor(event)[0]!);
  const [duplicateTitle,setDuplicateTitle]=useState(''),[duplicateSlug,setDuplicateSlug]=useState('');
@@ -88,5 +89,6 @@ export function EventOperations({event,onChanged,section='overview'}:{section?:s
    <p>응모작 {scope?.counts.event_entries??0}건 · 투표 {scope?.counts.event_votes??0}건 · 개인정보 {scope?.counts.event_participants??0}건</p>
    {!token?<Button disabled={busy} onClick={()=>run(async()=>{const prepared=await api<{token:string}>(base+'/reset-prepare','POST',{revision:scope!.revision,activityRevision:scope!.activityRevision});setToken(prepared.token);},'이벤트 주소를 입력하고 최종 확인해주세요.')}>범위 확인, 다음</Button>:<><label>이벤트 주소 ({event.slug})<input value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></label><Button disabled={busy||confirmation!==event.slug} onClick={()=>run(async()=>{await api(base+'/reset','POST',{token,confirmation});setScope(null);setToken('');},'테스트 데이터를 초기화했습니다.')}>최종 확인, 삭제 후 공모 시작</Button></>}
   </Modal>
+  {section==='settings'&&onDeleted&&<EventDeletion key={event.id} eventId={event.id} onDeleted={onDeleted}/>}
  </section>;
 }

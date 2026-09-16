@@ -22,7 +22,7 @@ export default function AdminApp() {
   async publish(draft){const saved=await request<Row>('events/'+draft.id,'PUT',{revision:revisions.current[draft.id],draft});revisions.current[saved.id]=saved.revision;return decode(await request<Row>('events/'+draft.id+'/publish','POST',{revision:saved.revision}));},
   async refresh(){return (await request<Row[]>('events')).map(decode);},
   async upload(id,file){return (await request<{id:string}>('events/'+id+'/upload','POST',{content:await prepareImage(file)})).id;},
-  operations: (event,section,onChanged) => <EventOperations section={section} event={event} onChanged={row=>{revisions.current[row.id]=row.revision;onChanged?.(decode(row));}}/>,
+  operations: (event,section,onChanged,onDeleted) => <EventOperations onDeleted={id=>{delete revisions.current[id];onDeleted?.(id);}} section={section} event={event} onChanged={row=>{revisions.current[row.id]=row.revision;onChanged?.(decode(row));}}/>,
   async save(draft){return decode(await request<Row>('events/'+draft.id,'PUT',{revision:revisions.current[draft.id],draft}));},
   async create(draft){return decode(await request<Row>('events','POST',draft));}
  }}/>;
