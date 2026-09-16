@@ -323,10 +323,10 @@
 /* Match the mobile viewport inside the content editor as well. */
 .preview-canvas.mobile .notices-section ul {font-size:12px;}
 
-/* Consent copy uses the same body size as the adjacent notices container. */
-.event-page .consent-row label {font-size:14px;font-weight:400;}
-@media(max-width:760px){.event-page .consent-row label {font-size:12px;}}
-.preview-canvas.mobile .consent-row label {font-size:12px;}
+/* Consent copy follows page body typography, including the editor preview. */
+.event-page .consent-row {align-items:flex-start;}
+.event-page .consent-row label {font-size:var(--text-body);font-weight:400;line-height:1.95;align-items:flex-start;}
+.event-page .consent-row label input {margin:calc((var(--text-body) * 1.95 - 24px) / 2) 0 0;}
 .instagram-input {position:relative;}
 .instagram-input>span {position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--field-text);pointer-events:none;}
 :root body .event-page .instagram-input input {padding-left:32px;}
