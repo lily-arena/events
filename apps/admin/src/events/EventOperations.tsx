@@ -69,9 +69,11 @@ export function EventOperations({event,onChanged,onDeleted,section='overview'}:{
     <p>선정한 결과는 공개·일정에서 결과 단계로 전환하면 공개됩니다. 이미 결과 단계라면 저장 즉시 반영됩니다.</p>
    </>}
   </section>
-  <Modal open={resultConfirm} onOpenChange={setResultConfirm} title="결과 선정 확인" description="선택한 후보를 최종 문구로 저장합니다.">
-   <p>{candidates.find(c=>c.id===selectedResult)?.message}</p>
-   <p>{candidates.find(c=>c.id===selectedResult)?.votes??0}표</p>
+  <Modal open={resultConfirm} onOpenChange={setResultConfirm} title="결과 선정 확인" className="operation-confirmation-dialog" description="선택한 후보를 최종 문구로 저장합니다.">
+   <div className="operation-confirmation-summary">
+    <div><h3>선택한 문구</h3><p>{candidates.find(c=>c.id===selectedResult)?.message}</p></div>
+    <p>득표수 <strong>{candidates.find(c=>c.id===selectedResult)?.votes??0}표</strong></p>
+   </div>
    <Button disabled={busy||!candidates.some(c=>c.id===selectedResult&&c.confirmed)} onClick={()=>run(async()=>{await api(base+'/result','POST',{revision:row.revision,stage:'result',votingStage:'voting',candidateId:selectedResult});setResultConfirm(false);},'결과 문구를 선정했습니다.')}>확인 후 선정</Button>
   </Modal>
 
@@ -81,8 +83,8 @@ export function EventOperations({event,onChanged,onDeleted,section='overview'}:{
   <Modal open={!!revealed} onOpenChange={open=>{if(!open)setRevealed(null);}} title="개인정보 원문" className="private-details-dialog" description="열람 기록이 남습니다. 필요한 내용만 확인해주세요.">{revealed&&<PrivateDetails value={revealed} event={event}/>}</Modal>
   <Modal open={!!deleteId} onOpenChange={open=>{if(!open)setDeleteId('');}} title="개인정보 삭제 확인" description="개인정보와 연결된 동의 이력·중복 대조 정보가 삭제됩니다. 응모 문구와 투표수는 보존되며 해당 정보의 재참여 제한이 약해질 수 있습니다."><Button disabled={busy} onClick={()=>run(async()=>{await api(base+'/delete-private','POST',{participantId:deleteId});setPeople(people.filter(p=>p.id!==deleteId));setDeleteId('');},'개인정보를 삭제했습니다.')}>확인 후 삭제</Button></Modal>
   <section hidden={section!=='settings'}><h2>테스트 데이터 초기화 후 공모 시작</h2><Button disabled={busy} onClick={()=>run(async()=>{setScope(await api<Scope>(base+'/reset-scope'));setToken('');setConfirmation('');},'삭제 범위를 확인해주세요.')}>삭제 범위 확인</Button></section>
-  <Modal open={!!preview} onOpenChange={open=>{if(!open)setPreview(null);}} title="단계 전환 확인" className="stage-transition-dialog" description={`${stageNames[stage]} 화면을 공개합니다.`}>
-   <div className="stage-transition-summary">
+  <Modal open={!!preview} onOpenChange={open=>{if(!open)setPreview(null);}} title="단계 전환 확인" className="operation-confirmation-dialog" description={`${stageNames[stage]} 화면을 공개합니다.`}>
+   <div className="operation-confirmation-summary">
     <p className="stage-transition-target">전환할 단계 <strong>{stageNames[stage]}</strong></p>
     {preview?.blockers.map(reason=><AdminNotice tone="warning" key={reason}>{reason}</AdminNotice>)}
     {!!preview?.candidates.length&&<div><h3>확정된 후보</h3><ol>{preview.candidates.map(c=><li key={c.id}>{c.message}</li>)}</ol></div>}
