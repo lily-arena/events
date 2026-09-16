@@ -331,3 +331,16 @@
 .instagram-input>span {position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--field-text);pointer-events:none;}
 :root body .event-page .instagram-input input {padding-left:32px;}
 .event-page .field>label {font:inherit;}
+
+/* Dedicated participation confirmation, shared by both completion screens. */
+.completion-page {min-height:100dvh;}
+.completion-content {max-width:720px;margin:0 auto;padding:80px 0 120px;text-align:center;}
+.completion-content h2 {margin:0 0 20px;font-size:var(--text-h2);font-weight:600;line-height:1.5;word-break:keep-all;}
+.completion-content h2:focus {outline:none;}
+.completion-content p {margin:0;color:var(--muted);font-size:var(--text-body);line-height:1.95;}
+.event-page .completion-return {display:inline-block;min-height:44px;margin-top:32px;padding:8px 0;border:0;border-radius:0;background:transparent;color:var(--muted);font:inherit;font-size:var(--text-body);text-decoration:underline;text-underline-offset:6px;cursor:pointer;}
+@media(max-width:760px){.completion-content {padding:64px 0 96px;}}
+
+.event-page .vote-check-notice {margin-bottom:20px;padding:16px;border:1px solid var(--line);border-radius:var(--radius);text-align:center;}
+.event-page .vote-check-notice p {margin:0;font-size:var(--text-body);line-height:1.7;color:var(--ink);}
+.event-page .vote-check-notice .completion-return {margin-top:8px;}

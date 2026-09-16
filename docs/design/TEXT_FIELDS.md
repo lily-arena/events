@@ -39,3 +39,12 @@
 - 개인정보 목록은 이벤트 전체의 실제 마스킹 데이터 기준으로 값이 있는 열만 반환한다. 페이지를 이동해도 열이 바뀌지 않는다. 새 투표 참여자에게 가상 이름을 부여하지 않는다.
 - 원문 보기는 빈 항목/빈 추가 객체를 숨기고 실제 추가 항목은 레이블과 함께 따로 표시한다. 긴 값은 줄바꿈하며 모바일은 항목명/값을 세로 배치한다.
 - 검증: 119 단위 테스트, optional-fields-flow 및 기존 전체 통합 시나리오, privacy-layout-ui PC/모바일 확인.
+
+
+## Completion pages and duplicate-vote feedback
+- Successful submission/vote renders a dedicated completion screen with the event header. Only submission completion offers an underlined return button.
+- Completion markers are scoped to event ID, stage ID and round in localStorage; no contact values are persisted in browser storage. Result pages and new rounds remain accessible.
+- No IP-based voter identity restriction. Existing abuse request limits remain; preflight lookup has a separate 60-request/5-minute budget and Turnstile voter_session verification.
+- Valid phone/email/Instagram values are checked after a 650ms debounce. Any matching identity disables submission; names are excluded. Failed checks offer retry. Atomic server duplicate enforcement still applies at submission time.
+- Browser storage deletion/private browsing cannot bypass matching server identities. This is not verified-person authentication: an individual using entirely different contact details cannot be identified as the same person.
+- Events configured to allow repeat voting bypass preflight and persistent completion display.

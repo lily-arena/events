@@ -1,9 +1,12 @@
+import {CompletionPage} from './CompletionPage';
 import { firstSeat } from "../../../../packages/event-builder/src/model";
 import { EventPage } from "./EventPage";
 import "./events.css";
 export default function PublicPreview() {
   const stage = new URLSearchParams(location.search).get("stage");
   if (location.pathname !== "/first-seat") return null;
+  const complete = new URLSearchParams(location.search).get("complete");
+  if(complete==="submission"||complete==="voting")return <CompletionPage title={firstSeat.title} kind={complete} onReturn={()=>{location.href="/first-seat?design";}}/>;
   return (
     <>
       <div className="review-note">

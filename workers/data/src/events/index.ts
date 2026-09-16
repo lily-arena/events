@@ -1,3 +1,4 @@
+import {checkVote} from './vote-check';
 import {purgeExpired} from './retention';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import {acceptParticipation,type ParticipationInput} from './participation';
@@ -55,6 +56,7 @@ export class PublicEventsData extends WorkerEntrypoint<Env> {
   if(!view||!Object.values(view.event.pages).flat().some((m:any)=>m.imageAssetId===assetId))return null;
   return this.env.DB.prepare('SELECT content_base64,mime FROM event_assets WHERE event_id=? AND id=?').bind(view.event.id,assetId).first<{content_base64:string;mime:string}>();
  }
+ async checkVote(eventId:string,stageId:string,round:number,identities:ParticipationInput['identities'],rateHmac:string) {return checkVote(this.env.DB,eventId,stageId,round,identities,rateHmac);}
  async participate(input:ParticipationInput) {return acceptParticipation(this.env.DB,input);}
  async event(slug: string) {
   const row = await this.env.DB.prepare("SELECT id,published_json,current_stage_id,revision FROM events WHERE slug=? AND visibility='published' AND published_json IS NOT NULL").bind(slug).first<Pick<EventRow,'id'|'published_json'|'current_stage_id'|'revision'>>();

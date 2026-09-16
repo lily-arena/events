@@ -1,3 +1,5 @@
+import {useVoteCheck,duplicateVoteMessage} from './useVoteCheck';
+import {CompletionPage} from './CompletionPage';
 import {ParticipationFields} from './ParticipationFields';
 import {formInputs} from '../../../../packages/event-builder/src/inputs';
 import {EventInfoCards} from '../../../../packages/ui/src/EventInfoCards';
@@ -30,6 +32,8 @@ export interface LiveEvent {
  result:{message:string}|null;
  accepting:boolean;
  onDirty?:()=>void;
+ completedVote?:boolean;
+ checkVote?:(values:Record<string,string>)=>Promise<boolean>;
  submit:(fields:FormData,requestKey:string)=>Promise<void>;
 }
 export function EventPage({
@@ -52,15 +56,17 @@ export function EventPage({
   const [notice, setNotice] = useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[complete,setComplete]=useState(false);
   const requestKey=useRef(crypto.randomUUID());
+  const voteCheck=useVoteCheck(stage==="voting"?live?.checkVote:undefined);
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if(!live){setNotice(true);return;}
-    if(busy||complete)return;
+    if(busy||complete||live.completedVote||voteCheck.status!=="clear")return;
     const fields=new FormData(e.currentTarget);setBusy(true);setError('');
-    try{await live.submit(fields,requestKey.current);setComplete(true);setNotice(true);}
-    catch(error){setError(error instanceof Error?error.message:'참여를 완료하지 못했습니다.');}
+    try{await live.submit(fields,requestKey.current);setComplete(true);}
+    catch(error){if(error instanceof Error&&error.message===duplicateVoteMessage)voteCheck.markDuplicate();setError(error instanceof Error?error.message:'참여를 완료하지 못했습니다.');}
     finally{setBusy(false);}
   };
+  if((complete||live?.completedVote)&&live)return <CompletionPage title={event.title} kind={stage==="voting"?"voting":"submission"} onReturn={()=>{setComplete(false);requestKey.current=crypto.randomUUID();}}/>;
   return (
     <div
       className={`event-page event-theme-dark ${embedded ? "embedded" : ""}`}
@@ -69,7 +75,7 @@ export function EventPage({
         <span className="wordmark">SEOUL ARENA</span>
         <h1 className="event-title-display">{event.title}</h1>
       </header>
-      <form onSubmit={submit} onChange={()=>live?.onDirty?.()}>
+      <form onSubmit={submit} onChange={e=>{live?.onDirty?.();setError("");voteCheck.update(new FormData(e.currentTarget));}}>
         <div className="event-content">
           {event.pages[stage].map((module) => {
             switch (module.type) {
@@ -161,7 +167,12 @@ export function EventPage({
           })}
           {stage !== "result" && (
             <div className="submission-action">
-              <Button kind="primary" type="submit" disabled={busy||complete||(live&&!live.accepting)}>
+              {voteCheck.status!=="clear"&&<div className="vote-check-notice" aria-live="polite">
+                <p>{voteCheck.status==='duplicate'?duplicateVoteMessage:voteCheck.status==='checking'?'중복 투표 여부를 확인하고 있습니다.':'중복 투표 여부를 확인하지 못했습니다. 다시 확인해주세요.'}</p>
+                {voteCheck.status==='error'&&<button type="button" className="completion-return" onClick={voteCheck.retry}>다시 확인</button>}
+              </div>}
+
+              <Button kind="primary" type="submit" disabled={busy||complete||(live&&!live.accepting)||voteCheck.status!=="clear"}>
                 {complete ? "참여 완료" : busy ? "보내는 중" : stage === "submission" ? "문구 보내기" : "투표하기"}
               </Button>
               {!live && <p>에디터 미리보기입니다. 실제 참여는 공개 페이지에서 진행해주세요.</p>}{live&&!live.accepting&&<p>현재 참여 기간이 아닙니다.</p>}{error&&<p role="alert">{error}</p>}

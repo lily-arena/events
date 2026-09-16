@@ -1,3 +1,4 @@
+import {checkVote} from '../../workers/data/src/events/vote-check';
 import { readFileSync } from 'node:fs';
 import { beforeEach,afterEach,describe,it,expect } from 'vitest';
 import { memoryD1 } from '../platform/sqlite-d1';
@@ -46,6 +47,25 @@ describe('atomic participation and duplicate voting',()=>{
   row=await repo.save(e.id,row.revision,{...JSON.parse(row.draft_json),allowRepeatVotes:false});row=await repo.publish(e.id,row.revision);
   await expect(acceptParticipation(memory.db,{...vote,revision:row.revision,requestKey:crypto.randomUUID(),participantId:crypto.randomUUID()})).rejects.toThrow();
   expect(memory.sqlite.prepare('SELECT count(*) n FROM event_votes').get()!.n).toBe(2);
+ });
+ it('prechecks each identity only within its event, stage and round',async()=>{
+  const e=await event('check-vote'),vote=await openVoting(e.id);
+  expect(await checkVote(memory.db,e.id,'voting',1,vote.identities,'check')).toEqual({duplicate:false});
+  await acceptParticipation(memory.db,vote);
+  for(const identity of vote.identities)expect(await checkVote(memory.db,e.id,'voting',1,[identity],'check')).toEqual({duplicate:true});
+  expect(await checkVote(memory.db,e.id,'voting',1,[],'check')).toEqual({duplicate:false});
+  expect(await checkVote(memory.db,e.id,'voting',1,[{field:'phone',hash:'f'.repeat(64)}],'check')).toEqual({duplicate:false});
+  const other=await event('other-check');await openVoting(other.id);
+  expect(await checkVote(memory.db,other.id,'voting',1,vote.identities,'check')).toEqual({duplicate:false});
+  await expect(checkVote(memory.db,e.id,'voting',2,vote.identities,'check')).rejects.toThrow();
+  let row=await repo.get(e.id);row=await repo.save(e.id,row.revision,{...JSON.parse(row.draft_json),allowRepeatVotes:true});await repo.publish(e.id,row.revision);
+  expect(await checkVote(memory.db,e.id,'voting',1,vote.identities,'check')).toEqual({duplicate:false});
+ });
+ it('limits preflight lookups without creating votes or participant data',async()=>{
+  const e=await event('check-rate'),vote=await openVoting(e.id);
+  for(let i=0;i<60;i++)await checkVote(memory.db,e.id,'voting',1,vote.identities,'checks-only');
+  await expect(checkVote(memory.db,e.id,'voting',1,vote.identities,'checks-only')).rejects.toThrow('조회 횟수');
+  expect(memory.sqlite.prepare('SELECT count(*) n FROM event_votes').get()!.n).toBe(0);
  });
  it('rejects outdated consent versions before storing any contact',async()=>{
   const e=await event('first'),submission=await input(e.id,'submission');
