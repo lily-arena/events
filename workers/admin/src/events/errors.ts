@@ -57,5 +57,6 @@ const messages = [
 ];
 export function adminErrorMessage(error:unknown):string {
  const message=error instanceof Error?error.message:"";
+ if(message.includes("EDIT_CONFLICT"))return "다른 운영자가 이벤트를 변경했습니다. 내 수정 내용은 유지됩니다. 최신 내용을 확인해주세요.";
  return messages.find(s=>message===s||message.endsWith(": "+s))??"요청을 처리하지 못했습니다. 최신 상태를 확인한 뒤 다시 시도해주세요.";
 }

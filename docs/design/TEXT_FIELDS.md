@@ -48,3 +48,12 @@
 - Valid phone/email/Instagram values are checked after a 650ms debounce. Any matching identity disables submission; names are excluded. Failed checks offer retry. Atomic server duplicate enforcement still applies at submission time.
 - Browser storage deletion/private browsing cannot bypass matching server identities. This is not verified-person authentication: an individual using entirely different contact details cannot be identified as the same person.
 - Events configured to allow repeat voting bypass preflight and persistent completion display.
+
+
+## Concurrent content editing
+- Each loaded draft carries a transient editorRevision. List refreshes and operations never replace the base revision of an unsaved draft.
+- Editor save and legacy publish reject stale versions with EDIT_CONFLICT; the server guard is atomic. Save-and-publish is now one atomic operation, preventing another operator's draft from being published between requests. Invalid publication rolls back the draft too.
+- Active editors poll a lightweight revision endpoint every 15 seconds and on window focus. This detects persisted changes, not other operators' unsaved work or live presence.
+- Conflicts preserve the current draft, stop save/publish, and offer a preview of the latest content and local draft download. Replacing a dirty draft requires explicit discard confirmation. No automatic merging is performed.
+- Edits made while a save is pending remain dirty and retain the newly saved base revision. Navigation/reload warns about unsaved changes.
+- Review decisions remain entry-version guarded; candidate confirmation and stage transitions retain activity/version guards. Separate events do not lock one another.

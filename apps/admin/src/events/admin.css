@@ -1096,3 +1096,7 @@
 .private-details dt {font-size:13px;color:#667085;line-height:1.6;}
 .private-details dd {margin:0;min-width:0;font-size:15px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap;}
 @media(max-width:480px){.private-details>div{grid-template-columns:1fr;gap:4px;}.private-details-dialog{padding:24px;}}
+
+.editor-conflict-dialog {width:min(820px,calc(100vw - 32px));}
+.editor-conflict-dialog .event-page {margin:24px 0;border-radius:12px;max-height:50vh;overflow:auto;}
+.editor-conflict-dialog .conflict-policy {white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;}

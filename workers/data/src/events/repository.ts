@@ -51,8 +51,17 @@ export class EventsRepository {
   const source = await this.get(sourceId);
   return this.create({...JSON.parse(source.draft_json),title,slug},sourceId);
  }
- async save(id: string, expectedRevision: number, input: unknown) {
-  const existing = await this.get(id), draft = validateDraft(input,id);
+ async editState(id:string) {await this.requireActive();return this.statement('SELECT revision,updated_at FROM events WHERE id=?',id).first<{revision:number;updated_at:number}>();}
+ private async commitEditor(id:string,expected:number,writes:D1PreparedStatement[]) {
+  try{await this.db.batch(writes);}catch(error){const state=await this.editState(id);if(!state||state.revision!==expected)throw new Error('EDIT_CONFLICT');throw error;}
+  const result=await this.get(id);
+  if(result.revision!==expected+1)throw new Error('EDIT_CONFLICT');
+  return result;
+ }
+ async save(id: string, expectedRevision: number, input: unknown, publishNow=false) {
+  const existing = await this.get(id);
+  if(existing.revision!==expectedRevision)throw new Error('EDIT_CONFLICT');
+  const draft = validateDraft(input,id);
   // Public URLs remain stable once published. Page copy can change independently.
   if (existing.published_json && draft.slug !== existing.slug) throw new Error('공개한 이벤트의 주소는 변경할 수 없습니다.');
   const previous = JSON.parse(existing.draft_json) as EventDraft;
@@ -60,8 +69,19 @@ export class EventsRepository {
   const stages=stagesFor(draft);
   const previousStages=stagesFor(previous);
   if(existing.published_json && JSON.stringify(stages)!==JSON.stringify(previousStages))throw new Error('공개 후에는 단계 구성을 변경할 수 없습니다. 이벤트를 복제해주세요.');
+  let publicWrites:D1PreparedStatement[]=[];
+  if(publishNow){
+   const activeStage=existing.published_json?existing.current_stage_id!:stages[0]!;
+   const kind=await this.statement('SELECT kind FROM event_stages WHERE event_id=? AND id=?',id,activeStage).first<{kind:Stage}>();
+   assertPublishable(draft,kind?.kind??activeStage as Stage);
+   if(activeStage==='voting'){const candidates=await this.candidates(id,activeStage);if(!candidates.length||candidates.some(c=>!c.confirmed))throw new Error('후보를 먼저 확정해주세요.');}
+   if(activeStage==='result'&&!await this.statement('SELECT 1 FROM event_results WHERE event_id=? AND stage_id=?',id,activeStage).first())throw new Error('결과 문구를 먼저 선택해주세요.');
+   publicWrites=[this.statement("UPDATE events SET published_json=draft_json,visibility='published' WHERE id=?",id),...await this.policyStatements(id,draft,stages),
+    this.statement('INSERT OR IGNORE INTO event_identity_claims(event_id,stage_id,round,field,identity_hmac,vote_id) SELECT event_id,stage_id,round,field,identity_hmac,min(vote_id) FROM event_vote_identities WHERE event_id=? GROUP BY event_id,stage_id,round,field,identity_hmac',id),
+    this.statement('UPDATE event_stages SET max_length=?,allow_repeat=? WHERE event_id=?',draft.maxLength,Number(draft.allowRepeatVotes),id),this.audit(id,'event.published',{revision:expectedRevision+1})];
+  }
   const guard = crypto.randomUUID();
-  await this.db.batch([
+  return this.commitEditor(id,expectedRevision,[
    this.statement('UPDATE events SET slug=?,title=?,draft_json=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?',draft.slug,draft.title,JSON.stringify(draft),Date.now(),id,expectedRevision),
    this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
 
@@ -74,9 +94,9 @@ export class EventsRepository {
     this.statement('UPDATE events SET current_stage_id=? WHERE id=?',stages[0],id)
    ] : []),
    this.audit(id,'event.draft_saved',{revision:expectedRevision+1}),
+   ...publicWrites,
    this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
   ]);
-  return this.get(id);
  }
  async archive(id: string, revision: number) {
   await this.get(id);
@@ -192,7 +212,7 @@ export class EventsRepository {
   return writes;
  }
  async publish(id:string,revision:number) {
-  const event=await this.get(id),draft=validateDraft(JSON.parse(event.draft_json),id);
+  const event=await this.get(id);if(event.revision!==revision)throw new Error('EDIT_CONFLICT');const draft=validateDraft(JSON.parse(event.draft_json),id);
   const current=await this.statement('SELECT kind FROM event_stages WHERE event_id=? AND id=?',id,event.current_stage_id).first<{kind:Stage}>();
   if(!current) throw new Error('현재 단계를 확인해주세요.');
   assertPublishable(draft,current.kind);
@@ -200,7 +220,7 @@ export class EventsRepository {
   if(current.kind==='result'&&!await this.statement('SELECT 1 FROM event_results WHERE event_id=? AND stage_id=?',id,event.current_stage_id).first())throw new Error('결과 문구를 먼저 선택해주세요.');
   const policyWrites=await this.policyStatements(id,draft,stagesFor(draft));
   const guard=crypto.randomUUID();
-  await this.db.batch([
+  return this.commitEditor(id,revision,[
    this.statement("UPDATE events SET published_json=draft_json,visibility='published',revision=revision+1,updated_at=? WHERE id=? AND revision=?",Date.now(),id,revision),
    this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
    ...policyWrites,
@@ -210,7 +230,6 @@ export class EventsRepository {
    this.audit(id,'event.published',{revision}),
    this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
   ]);
-  return this.get(id);
  }
  async schedule(id:string,stageId:string,startsAt:number|null,endsAt:number|null,revision:number) {
   await this.get(id);

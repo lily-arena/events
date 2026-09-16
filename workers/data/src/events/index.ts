@@ -22,6 +22,8 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async get(identity: Identity,id:string) {return (await this.repository(identity)).get(id);}
  async create(identity: Identity,input:unknown) {return (await this.repository(identity)).create(input);}
  async save(identity: Identity,id:string,revision:number,input:unknown) {return (await this.repository(identity)).save(id,revision,input);}
+ async editState(identity:Identity,id:string) {return (await this.repository(identity)).editState(id);}
+ async saveAndPublish(identity:Identity,id:string,revision:number,input:unknown) {return (await this.repository(identity)).save(id,revision,input,true);}
  async duplicate(identity: Identity,id:string,title:string,slug:string) {return (await this.repository(identity)).duplicate(id,title,slug);}
  async archive(identity: Identity,id:string,revision:number) {return (await this.repository(identity)).archive(id,revision);}
  async resetScope(identity: Identity,id:string) {return (await this.repository(identity)).resetScope(id);}

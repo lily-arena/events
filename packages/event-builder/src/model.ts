@@ -33,6 +33,8 @@ export interface PageModule {
   body: string;
 }
 export interface EventDraft {
+  /** Client-only version paired with this exact loaded draft; never persisted. */
+  editorRevision?: number;
   id: string;
   slug: string;
   title: string;
