@@ -4,6 +4,7 @@
   --paper: #000;
   --soft: #111;
   --line: #4a4a4a;
+  --event-input-font-size: 17px;
   --event-font: "Pretendard Variable", sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -28,6 +29,7 @@
   color: var(--ink);
   border-color: var(--line);
   font-family: var(--event-font);
+  font-size: var(--event-input-font-size);
 }
 .event-theme-dark .field :is(input, textarea)::placeholder {
   color: #999;
@@ -75,3 +77,5 @@
 
 /* The final text must not add extra space below the result card content. */
 .event-page .result-module > :last-child {margin-bottom:0;}
+
+.event-page .instagram-input > span {font-size:var(--event-input-font-size);}
