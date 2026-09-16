@@ -77,7 +77,7 @@
 :root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"], [type="button"], [type="submit"], [type="reset"]), textarea, select):focus { border-color: var(--field-active); outline: none; }
 :root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"]), textarea, select):disabled { background-color: var(--field-disabled-background); color: var(--field-disabled-text); border-color: var(--field-border); opacity: 1; cursor: not-allowed; }
 :root body :is(.admin-shell, .event-page, .dialog) :is(input, textarea):disabled::placeholder { color: var(--field-disabled-text); }
-:root body :is(.admin-shell, .event-page, .dialog) select {
+:root body :is(.admin-shell, .event-page, .dialog) select:not([multiple]) {
   appearance: none;
   padding-right: 36px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20'%3E%3Cpath d='m4 7 6 6 6-6' fill='none' stroke='%23737373' stroke-width='1.5'/%3E%3C/svg%3E");

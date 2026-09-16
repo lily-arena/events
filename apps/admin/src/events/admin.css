@@ -1053,6 +1053,7 @@
 }
 .operations-panel .review-toolbar {display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
 .operations-panel .review-toolbar label {margin:0;}
+.operations-panel .review-toolbar>label:first-child {flex:0 0 160px;min-width:160px;}
 .operations-panel .review-toolbar .review-search {flex:1;min-width:180px;}
 .operations-panel .review-toolbar button {margin:0;}
 .admin-table-scroll {overflow-x:auto;width:100%;}
