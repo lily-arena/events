@@ -5,6 +5,7 @@ const Admin = lazy(() => import("../admin/src/events/AdminPreview"));
 const ConnectedAdmin = lazy(() => import("../admin/src/events/AdminApp"));
 const ConnectedPublic = lazy(() => import("../public/src/events/PublicApp"));
 const Public = lazy(() => import("../public/src/events/PublicPreview"));
+document.title=location.pathname==='/admin'||location.pathname.startsWith('/admin/')?'서울아레나 이벤트 백오피스':'서울아레나 이벤트';
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Suspense

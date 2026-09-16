@@ -1,3 +1,4 @@
+import {eventBrowserTitle} from "../../../../packages/event-builder/src/model";
 import {useVoteCheck,duplicateVoteMessage} from './useVoteCheck';
 import {CompletionPage} from './CompletionPage';
 import {ParticipationFields} from './ParticipationFields';
@@ -5,7 +6,7 @@ import {formInputs} from '../../../../packages/event-builder/src/inputs';
 import {EventInfoCards} from '../../../../packages/ui/src/EventInfoCards';
 import {EventSchedule} from '../../../../packages/ui/src/EventSchedule';
 import {consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { FormEvent } from "react";
 import { Button, Modal } from "../../../../packages/ui/src";
 import type {
@@ -66,6 +67,7 @@ export function EventPage({
     catch(error){if(error instanceof Error&&error.message===duplicateVoteMessage){voteCheck.markDuplicate();setError('');return;}setError(error instanceof Error?error.message:'참여를 완료하지 못했습니다.');}
     finally{setBusy(false);}
   };
+  useEffect(()=>{if(!embedded)document.title=eventBrowserTitle(event);},[embedded,event.browserTitle,event.title]);
   if((complete||live?.completedVote)&&live)return <CompletionPage title={event.title} kind={stage==="voting"?"voting":"submission"} onReturn={()=>{setComplete(false);requestKey.current=crypto.randomUUID();}}/>;
   const headerImage=event.pages[stage].find(m=>m.type==="header-image");
   return (

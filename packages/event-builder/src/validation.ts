@@ -104,7 +104,7 @@ export function validateDraft(value: unknown, id: string): EventDraft {
   }
   return { id, slug, title: text(input.title, 100, true), description: text(input.description, 1000),
     template: choice(input.template, ['first-seat','submission','voting']), pages: resultPages,
-    privacyPolicy,contactUrl,retentionDays:Number(retentionDays),stageOrder, visibility: 'draft', updatedAt: new Date().toISOString(), maxLength: resultPages.submission.find(m=>m.type==='form')?.inputFields?.find(f=>f.binding==='message')?.maxLength??maxLength as number,
+    browserTitle:input.browserTitle===undefined?undefined:text(input.browserTitle,150),privacyPolicy,contactUrl,retentionDays:Number(retentionDays),stageOrder, visibility: 'draft', updatedAt: new Date().toISOString(), maxLength: resultPages.submission.find(m=>m.type==='form')?.inputFields?.find(f=>f.binding==='message')?.maxLength??maxLength as number,
     allowRepeatVotes: input.allowRepeatVotes as boolean };
 }
 export function assertPublishable(draft: EventDraft, stage: Stage) {

@@ -35,6 +35,7 @@ export interface PageModule {
   body: string;
 }
 export interface EventDraft {
+  browserTitle?: string;
   /** Client-only version paired with this exact loaded draft; never persisted. */
   editorRevision?: number;
   id: string;
@@ -222,3 +223,5 @@ export function moveModule(
   [next[from], next[to]] = [next[to]!, next[from]!];
   return next;
 }
+
+export function eventBrowserTitle(event:Pick<EventDraft,"title"|"browserTitle">){return event.browserTitle?.trim()||`서울아레나 ${event.title}`;}
