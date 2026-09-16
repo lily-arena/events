@@ -72,3 +72,6 @@
 .event-page .text-tone-emphasis {color:var(--ink);}
 .event-theme-dark.embedded {--text-h1:30px;--text-h2:26px;--text-h3:22px;--text-h4:18px;--text-body:15px;}
 @media(max-width:760px){.event-theme-dark {--text-h1:30px;--text-h2:26px;--text-h3:22px;--text-h4:18px;--text-body:15px;}}
+
+/* The final text must not add extra space below the result card content. */
+.event-page .result-module > :last-child {margin-bottom:0;}
