@@ -1,4 +1,4 @@
-import shellHtml from './generated/page-shell.js';
+import shellHtml from '../packages/relay/src/generated-page-shell.js';
 import {handlePage} from '../packages/relay/src/page.js';
 export const config={runtime:'edge'};
 export default function handler(request:Request){const origin=process.env.PUBLIC_ORIGIN??'https://events.seoularena.net';return handlePage(request,{
