@@ -1,3 +1,4 @@
+import {BulletText} from "../../../../packages/ui/src/BulletText";
 import {eventBrowserTitle} from "../../../../packages/event-builder/src/model";
 import {useVoteCheck,duplicateVoteMessage} from './useVoteCheck';
 import {CompletionPage} from './CompletionPage';
@@ -122,14 +123,7 @@ export function EventPage({
                     key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}
                   >
                     <ModuleTitle module={module}/>
-                    <ul>
-                      {module.body
-                        .split("\n")
-                        .filter(Boolean)
-                        .map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
-                    </ul>
+                    <BulletText text={module.body} allLines/>
                   </section>
                 );
               case "candidates":

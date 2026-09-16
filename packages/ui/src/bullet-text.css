@@ -1,0 +1,7 @@
+.bullet-text {line-height:1.85;overflow-wrap:anywhere;text-align:left;}
+.bullet-text > p {margin:0 0 12px;white-space:pre-wrap;}
+.bullet-text ul {list-style-type:disc;padding-inline-start:1.5em;margin:8px 0;}
+.bullet-text ul ul {list-style-type:circle;margin:4px 0;}
+.bullet-text li {padding-inline-start:.15em;white-space:pre-wrap;}
+.bullet-text > :first-child {margin-top:0;}
+.bullet-text > :last-child {margin-bottom:0;}

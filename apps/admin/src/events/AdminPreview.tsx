@@ -1,3 +1,4 @@
+import {BulletTextarea} from "./BulletTextarea";
 import {AdminRequestError} from './operations-api';
 import {InputFieldsEditor} from './InputFieldsEditor';
 import {formInputs} from '../../../../packages/event-builder/src/inputs';
@@ -600,7 +601,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                       <label className="field">제목 색상<select aria-label="제목 색상" value={selectedModule.titleTone??"emphasis"} onChange={e=>patchModule({titleTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
                       <label className="field">
                         설명
-                        <textarea
+                        {selectedModule.type==='notices'?<BulletTextarea aria-label="설명" className="body-editor" value={selectedModule.body} onValueChange={body=>patchModule({body})}/>:<>                        <textarea
                           aria-label="설명"
                           className="body-editor"
                           value={selectedModule.body}
@@ -618,7 +619,8 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                             }))
                           }
                         />
-                        <small>줄을 바꾸면 문단이 나뉩니다.</small>
+</>}
+                        <small>{selectedModule.type==='notices'?'한 줄에 한 항목 · Tab 들여쓰기 / Shift+Tab 내어쓰기. 들여쓴 항목은 빈 원 불렛으로 표시됩니다.':'줄을 바꾸면 문단이 나뉩니다.'}</small>
                       </label>
                       <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
                       </>}
