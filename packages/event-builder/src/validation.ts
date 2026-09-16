@@ -62,9 +62,10 @@ function inputFields(value:unknown):FormInput[]|undefined {
 }
 function module(value: unknown): PageModule {
   const m = object(value);
+  if(m.headerHeight!==undefined&&(!Number.isInteger(m.headerHeight)||Number(m.headerHeight)<40||Number(m.headerHeight)>100))fail('헤더 높이는 40~100vh로 입력해주세요.');
   // Construct an allow-listed object. Never retain arbitrary HTML, CSS or unknown fields.
   return { id: text(m.id, 100, true), type: choice(m.type, Object.keys(moduleNames) as PageModule['type'][]),
-    inputFields:inputFields(m.inputFields),cards:cards(m.cards),schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
+    headerHeight:m.headerHeight===undefined?undefined:Number(m.headerHeight),inputFields:inputFields(m.inputFields),cards:cards(m.cards),schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
     title: text(m.title, 500), body: text(m.body, 20000),
     titleSize: choice(m.titleSize, ['h1','h2','h3','h4','body'] as const, 'h3'),
     titleTone: choice(m.titleTone, ['default','emphasis'] as const, 'emphasis'),
@@ -90,6 +91,7 @@ export function validateDraft(value: unknown, id: string): EventDraft {
     if (!Array.isArray(blocks) || blocks.length > 30) fail('페이지당 모듈은 최대 30개입니다.');
     const validated = (blocks as unknown[]).map(module);
     if (new Set(validated.map(m => m.id)).size !== validated.length) fail('모듈이 중복되었습니다.');
+    if(validated.filter(m=>m.type==='header-image').length>1)fail('헤더 이미지는 페이지마다 하나만 추가할 수 있습니다.');
     for (const functional of ['form','consent','candidates','result']) {
       if (validated.filter(m => m.type === functional).length > 1) fail('참여 기능은 페이지마다 하나씩만 넣을 수 있습니다.');
     }

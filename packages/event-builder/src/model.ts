@@ -1,4 +1,5 @@
 export type ModuleType =
+  | "header-image"
   | "schedule"
   | "image"
   | "hero"
@@ -21,6 +22,7 @@ export interface PageModule {
   schedule?: ScheduleItem[];
   consents?: import("./consents").ConsentItem[];
   fields?: InputField[];
+  headerHeight?: number;
   imageAssetId?: string;
   imageUrl?: string;
   imageAlt?: string;
@@ -51,6 +53,7 @@ export interface EventDraft {
   allowRepeatVotes: boolean;
 }
 export const moduleNames: Record<ModuleType, string> = {
+  "header-image": "헤더 이미지",
   schedule: "일정",
   image: "이미지",
   hero: "이벤트 소개",
@@ -215,6 +218,7 @@ export function moveModule(
   const from = next.findIndex((x) => x.id === id);
   const to = from + direction;
   if (from < 0 || to < 0 || to >= next.length) return modules;
+  if(next[from]?.type==="header-image"||next[to]?.type==="header-image")return modules;
   [next[from], next[to]] = [next[to]!, next[from]!];
   return next;
 }

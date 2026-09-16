@@ -506,7 +506,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                         <div className="row">
                           <Button
                             kind="small"
-                            disabled={draft.pages[stage][0]?.id === moduleId}
+                            disabled={selectedModule.type==="header-image"||draft.pages[stage][0]?.id === moduleId||draft.pages[stage][draft.pages[stage].findIndex(m=>m.id===moduleId)-1]?.type==="header-image"}
                             onClick={() =>
                               update((d) => ({
                                 ...d,
@@ -526,7 +526,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                           <Button
                             kind="small"
                             disabled={
-                              draft.pages[stage].at(-1)?.id === moduleId
+                              selectedModule.type==="header-image"||draft.pages[stage].at(-1)?.id === moduleId
                             }
                             onClick={() =>
                               update((d) => ({
@@ -565,6 +565,12 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                       </button></div>
                       {selectedModule.type==="hero"&&<label className="field">이벤트 제목<input aria-label="이벤트 제목" value={draft.title} onChange={e=>update(d=>({...d,title:e.target.value}))}/><small>SEOUL ARENA 아래에 표시됩니다. 모든 단계에 공통 적용됩니다.</small></label>}
 
+                      {selectedModule.type==='header-image'?<div className="header-image-settings">
+                       <p>페이지 맨 위에 표시됩니다. SEOUL ARENA와 이벤트 제목은 이미지 구간에서 고정되고, 다음 콘텐츠에 도달하면 함께 스크롤됩니다.</p>
+                       <label className="field">헤더 높이 (vh)<input type="number" min={40} max={100} value={selectedModule.headerHeight??80} onChange={e=>patchModule({headerHeight:Math.max(40,Math.min(100,Number(e.target.value)))})}/><small>기본 80vh · 화면 높이의 80%를 사용합니다.</small></label>
+                       <label className="field">헤더 이미지 업로드<input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{if(storage?.upload){const id=await storage.upload(draft.id,file);patchModule({imageAssetId:id,imageUrl:''});}else{patchModule({imageAssetId:undefined,imageUrl:URL.createObjectURL(file)});}setMessage('이미지를 적용했습니다. 페이지를 저장해주세요.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'업로드하지 못했습니다.');}}}/><small>권장: 2400 × 1600px, 10MB 이하 JPG·PNG·WebP. 업로드 시 웹용으로 자동 최적화됩니다. 화면 비율에 따라 가장자리가 잘릴 수 있으므로 주요 이미지는 중앙에 배치해주세요. 제목은 자동으로 표시되므로 이미지에 넣지 않아도 됩니다.</small></label>
+                       <label className="field">이미지 설명<input value={selectedModule.imageAlt??''} onChange={e=>patchModule({imageAlt:e.target.value})}/></label>
+                      </div>:<>
                       <label className="field">
                         제목
                         <textarea
@@ -614,6 +620,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                         <small>줄을 바꾸면 문단이 나뉩니다.</small>
                       </label>
                       <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
+                      </>}
                       {selectedModule.type==='intro'&&<InfoCardsEditor items={selectedModule.cards??[{id:selectedModule.id+'-card',title:selectedModule.title,text:'',description:selectedModule.body}]} onChange={cards=>patchModule({cards,...(!selectedModule.cards?{title:'',body:''}:{})})}/>}
                       {selectedModule.type==='schedule'&&<ScheduleEditor items={selectedModule.schedule??[]} onChange={schedule=>patchModule({schedule})}/>}
                       {selectedModule.type==='form'&&<InputFieldsEditor items={formInputs(selectedModule,stage,draft.maxLength)} onChange={inputFields=>update(d=>({...d,maxLength:inputFields.find(f=>f.binding==='message')?.maxLength??d.maxLength,pages:{...d.pages,[stage]:d.pages[stage].map(m=>m.id===moduleId?{...m,inputFields}:m)}}))}/>}
@@ -728,13 +735,14 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
             ([type, name]) => (
               <button
                 key={type}
+                disabled={type==="header-image"&&draft.pages[stage].some(m=>m.type==="header-image")}
                 onClick={() => {
                   const id = crypto.randomUUID();
                   update((d) => ({
                     ...d,
                     pages: {
                       ...d.pages,
-                      [stage]: [
+                      [stage]: type==="header-image"?[{id,type,title:"",body:"",headerHeight:80},...d.pages[stage]]:[
                         ...d.pages[stage],
                         { id, type, title: name, body: type==='schedule'?'':"내용을 입력해주세요.", ...(type==='intro'?{title:'',body:'',cards:[{id:crypto.randomUUID(),title:'새 안내',text:'',description:''}]}:{}), ...(type==='schedule'?{schedule:[{id:crypto.randomUUID(),title:'접수 기간',start:'',end:'',description:''}]}:{}) },
                       ],

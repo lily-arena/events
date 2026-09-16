@@ -67,18 +67,24 @@ export function EventPage({
     finally{setBusy(false);}
   };
   if((complete||live?.completedVote)&&live)return <CompletionPage title={event.title} kind={stage==="voting"?"voting":"submission"} onReturn={()=>{setComplete(false);requestKey.current=crypto.randomUUID();}}/>;
+  const headerImage=event.pages[stage].find(m=>m.type==="header-image");
   return (
     <div
       className={`event-page event-theme-dark ${embedded ? "embedded" : ""}`}
     >
-      <header className="public-header">
-        <span className="wordmark">SEOUL ARENA</span>
-        <h1 className="event-title-display">{event.title}</h1>
+      <header className={`public-header ${headerImage?'image-header':''}`} style={headerImage?{minHeight:`${headerImage.headerHeight??80}vh`}:undefined} data-edit-selected={embedded&&headerImage&&selectedModuleId===headerImage.id?true:undefined} onClick={embedded&&headerImage?()=>onSelectModule?.(headerImage.id):undefined}>
+        {headerImage&&(headerImage.imageAssetId||headerImage.imageUrl)&&<img className="header-background" src={headerImage.imageAssetId?(embedded?`/api/admin/events/${event.id}/assets/${headerImage.imageAssetId}`:`/api/events/${event.slug}/assets/${headerImage.imageAssetId}`):headerImage.imageUrl} alt={headerImage.imageAlt??''}/>}
+        {headerImage&&<div className="header-image-shade" aria-hidden="true"/>}
+        <div className={headerImage?"header-sticky-title":undefined}>
+          <span className="wordmark">SEOUL ARENA</span>
+          <h1 className="event-title-display">{event.title}</h1>
+        </div>
       </header>
       <form onSubmit={submit} onChange={e=>{live?.onDirty?.();setError("");voteCheck.update(new FormData(e.currentTarget));}}>
         <div className="event-content">
           {event.pages[stage].map((module) => {
             switch (module.type) {
+              case "header-image": return null;
               case "hero":
                 return (
                   <section className="event-hero" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
