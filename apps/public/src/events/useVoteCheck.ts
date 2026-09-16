@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {validateParticipant} from '../../../../packages/security/src/event-participant';
-export const duplicateVoteMessage='이미 투표에 사용된 참여 정보가 있습니다. 중복 투표는 할 수 없습니다.';
+export const duplicateVoteMessage='이미 투표에 사용된 참여 정보가 있습니다.';
 export function voteCheckValues(fields:FormData){
  const values:Record<string,string>={};
  for(const field of ['phone','email','instagram'] as const){

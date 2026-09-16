@@ -63,7 +63,7 @@ export function EventPage({
     if(busy||complete||live.completedVote||voteCheck.status!=="clear")return;
     const fields=new FormData(e.currentTarget);setBusy(true);setError('');
     try{await live.submit(fields,requestKey.current);setComplete(true);}
-    catch(error){if(error instanceof Error&&error.message===duplicateVoteMessage)voteCheck.markDuplicate();setError(error instanceof Error?error.message:'참여를 완료하지 못했습니다.');}
+    catch(error){if(error instanceof Error&&error.message===duplicateVoteMessage){voteCheck.markDuplicate();setError('');return;}setError(error instanceof Error?error.message:'참여를 완료하지 못했습니다.');}
     finally{setBusy(false);}
   };
   if((complete||live?.completedVote)&&live)return <CompletionPage title={event.title} kind={stage==="voting"?"voting":"submission"} onReturn={()=>{setComplete(false);requestKey.current=crypto.randomUUID();}}/>;
@@ -167,8 +167,8 @@ export function EventPage({
           })}
           {stage !== "result" && (
             <div className="submission-action">
-              {voteCheck.status!=="clear"&&<div className="vote-check-notice" aria-live="polite">
-                <p>{voteCheck.status==='duplicate'?duplicateVoteMessage:voteCheck.status==='checking'?'중복 투표 여부를 확인하고 있습니다.':'중복 투표 여부를 확인하지 못했습니다. 다시 확인해주세요.'}</p>
+              {(voteCheck.status==="duplicate"||voteCheck.status==="error")&&<div className="vote-check-notice" aria-live="polite">
+                <p>{voteCheck.status==='duplicate'?duplicateVoteMessage:'중복 투표 여부를 확인하지 못했습니다. 다시 확인해주세요.'}</p>
                 {voteCheck.status==='error'&&<button type="button" className="completion-return" onClick={voteCheck.retry}>다시 확인</button>}
               </div>}
 

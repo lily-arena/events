@@ -1113,3 +1113,20 @@
 .editor-conflict-dialog {width:min(820px,calc(100vw - 32px));}
 .editor-conflict-dialog .event-page {margin:24px 0;border-radius:12px;max-height:50vh;overflow:auto;}
 .editor-conflict-dialog .conflict-policy {white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;}
+
+/* Keep stage confirmation content and actions readable in the portal. */
+.dialog.stage-transition-dialog {display:grid;grid-template-columns:1fr 1fr;gap:20px 12px;width:min(560px,calc(100vw - 32px));padding:28px;}
+.stage-transition-dialog>h2,.stage-transition-dialog>.dialog-description,.stage-transition-summary {grid-column:1 / -1;margin:0;}
+.stage-transition-dialog>h2 {font-size:24px;line-height:1.4;}
+.stage-transition-dialog>.dialog-description {font-size:15px;line-height:1.7;word-break:keep-all;overflow-wrap:anywhere;}
+.stage-transition-summary {display:grid;gap:16px;padding:20px;background:#f5f6f8;border:1px solid #e5e7eb;border-radius:12px;min-width:0;line-height:1.7;overflow-wrap:anywhere;}
+.stage-transition-summary p,.stage-transition-summary h3 {margin:0;}
+.stage-transition-summary h3 {font-size:14px;color:#6b7280;margin-bottom:8px;}
+.stage-transition-target {display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;font-size:14px;color:#6b7280;}
+.stage-transition-target strong {font-size:18px;color:#171717;}
+.stage-transition-summary ol {margin:0;padding-left:24px;display:grid;gap:8px;}
+.stage-transition-summary li {padding-left:4px;font-size:15px;}
+.stage-transition-dialog>.button {grid-column:2;grid-row:4;width:100%;margin:0;background:#171717;color:#fff;}
+.stage-transition-dialog>.dialog-footer {grid-column:1;grid-row:4;margin:0;}
+.stage-transition-dialog>.dialog-footer .button {width:100%;}
+@media(max-width:480px){.dialog.stage-transition-dialog{padding:20px;}.stage-transition-summary{padding:16px;}}

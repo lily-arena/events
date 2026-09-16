@@ -81,8 +81,13 @@ export function EventOperations({event,onChanged,onDeleted,section='overview'}:{
   <Modal open={!!revealed} onOpenChange={open=>{if(!open)setRevealed(null);}} title="개인정보 원문" className="private-details-dialog" description="열람 기록이 남습니다. 필요한 내용만 확인해주세요.">{revealed&&<PrivateDetails value={revealed} event={event}/>}</Modal>
   <Modal open={!!deleteId} onOpenChange={open=>{if(!open)setDeleteId('');}} title="개인정보 삭제 확인" description="개인정보와 연결된 동의 이력·중복 대조 정보가 삭제됩니다. 응모 문구와 투표수는 보존되며 해당 정보의 재참여 제한이 약해질 수 있습니다."><Button disabled={busy} onClick={()=>run(async()=>{await api(base+'/delete-private','POST',{participantId:deleteId});setPeople(people.filter(p=>p.id!==deleteId));setDeleteId('');},'개인정보를 삭제했습니다.')}>확인 후 삭제</Button></Modal>
   <section hidden={section!=='settings'}><h2>테스트 데이터 초기화 후 공모 시작</h2><Button disabled={busy} onClick={()=>run(async()=>{setScope(await api<Scope>(base+'/reset-scope'));setToken('');setConfirmation('');},'삭제 범위를 확인해주세요.')}>삭제 범위 확인</Button></section>
-  <Modal open={!!preview} onOpenChange={open=>{if(!open)setPreview(null);}} title="단계 전환 확인" description={`${stageNames[stage]} 화면을 공개합니다.`}>
-   {preview?.blockers.map(reason=><AdminNotice tone="warning" key={reason}>{reason}</AdminNotice>)}{preview?.candidates.map(c=><p key={c.id}>{c.message}</p>)}{preview?.result&&<p>{preview.result.message}</p>}
+  <Modal open={!!preview} onOpenChange={open=>{if(!open)setPreview(null);}} title="단계 전환 확인" className="stage-transition-dialog" description={`${stageNames[stage]} 화면을 공개합니다.`}>
+   <div className="stage-transition-summary">
+    <p className="stage-transition-target">전환할 단계 <strong>{stageNames[stage]}</strong></p>
+    {preview?.blockers.map(reason=><AdminNotice tone="warning" key={reason}>{reason}</AdminNotice>)}
+    {!!preview?.candidates.length&&<div><h3>확정된 후보</h3><ol>{preview.candidates.map(c=><li key={c.id}>{c.message}</li>)}</ol></div>}
+    {preview?.result&&<div><h3>선정된 문구</h3><p>{preview.result.message}</p></div>}
+   </div>
    <Button disabled={busy||!preview?.canTransition} onClick={()=>run(async()=>{await api(base+'/transition','POST',{stage,revision:preview!.revision,activityRevision:preview!.activityRevision,accepting:stage!=='result'});setPreview(null);},'단계를 전환했습니다.')}>확인 후 전환</Button>
   </Modal>
   <Modal open={!!scope} onOpenChange={open=>{if(!open){setScope(null);setToken('');}}} title={token?'최종 삭제 확인':'삭제 범위 확인'} description="이 이벤트의 응모작·개인정보·동의 이력·후보·투표·결과·중복 제한이 삭제됩니다. 문구·동의문 원문·관리자·운영 기록은 보존됩니다.">
