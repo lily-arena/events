@@ -1,4 +1,4 @@
-import {encodePolicy} from '../../../../packages/event-builder/src/consents';
+import {encodePolicy,consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
 import { sha256Hex } from '../../../../packages/security/src/hash';
 import { stagesFor, type EventDraft, type Stage } from '../../../../packages/event-builder/src/model';
 import { validateDraft, assertPublishable } from '../../../../packages/event-builder/src/validation';
@@ -163,6 +163,26 @@ export class EventsRepository {
   ]);
   return this.get(id);
  }
+ /** Snapshot displayed consent labels/details and the footer policy in immutable versions. */
+ private async policyStatements(id:string,draft:EventDraft,stages:Stage[]) {
+  const writes:D1PreparedStatement[]=[];
+  for(const stage of stages){
+   const module=draft.pages[stage].find(m=>m.type==='consent');
+   if(!module)continue;
+   const items=consentItems(module,stage);
+   for(const item of items){
+    const old=await this.statement('SELECT p.body FROM stage_policies s JOIN event_policies p ON p.event_id=s.event_id AND p.id=s.policy_id WHERE s.event_id=? AND s.stage_id=? AND s.kind=?',id,stage,item.id).first<{body:string}>();
+    // Older drafts kept policy copy separately. Preserve that copy until explicitly edited.
+    const resolved=!module.consents&&old?{...item,...decodePolicy(old.body)}:item;
+    const body=encodePolicy(resolved,item.id==='privacy'?draft.privacyPolicy:undefined);
+    if(old?.body===body)continue;
+    const policyId=crypto.randomUUID(),digest=await sha256Hex(body);
+    writes.push(this.statement('INSERT INTO event_policies(event_id,id,kind,version,body,digest,created_at) SELECT ?,?,?,coalesce(max(version),0)+1,?,?,? FROM event_policies WHERE event_id=? AND kind=?',id,policyId,item.id,body,digest,Date.now(),id,item.id),this.statement('INSERT INTO stage_policies VALUES(?,?,?,?,1) ON CONFLICT(event_id,stage_id,kind) DO UPDATE SET policy_id=excluded.policy_id',id,stage,item.id,policyId),this.audit(id,'policy.version_created',{stageId:stage,kind:item.id,policyId}));
+   }
+   if(items.length)writes.push(this.statement(`DELETE FROM stage_policies WHERE event_id=? AND stage_id=? AND kind NOT IN (${items.map(()=>'?').join(',')})`,id,stage,...items.map(item=>item.id)));
+  }
+  return writes;
+ }
  async publish(id:string,revision:number) {
   const event=await this.get(id),draft=validateDraft(JSON.parse(event.draft_json),id);
   const current=await this.statement('SELECT kind FROM event_stages WHERE event_id=? AND id=?',id,event.current_stage_id).first<{kind:Stage}>();
@@ -170,26 +190,7 @@ export class EventsRepository {
   assertPublishable(draft,current.kind);
   if(current.kind==='voting'){const candidates=await this.candidates(id,event.current_stage_id!);if(!candidates.length||candidates.some(c=>!c.confirmed))throw new Error('후보를 먼저 확정해주세요.');}
   if(current.kind==='result'&&!await this.statement('SELECT 1 FROM event_results WHERE event_id=? AND stage_id=?',id,event.current_stage_id).first())throw new Error('결과 문구를 먼저 선택해주세요.');
-  const configured=draft.pages[current.kind].find(m=>m.type==='consent')?.consents;
-  if(configured&&configured.some(item=>!item.body.trim()))throw new Error('동의문 원문을 모두 입력해주세요.');
-  if(current.kind!=='result') {
-   const policies=configured?configured.map(item=>({stage_id:event.current_stage_id,kind:item.id})):await this.policies(id);
-   if(!policies.some(p=>p.stage_id===event.current_stage_id && p.kind==='privacy')) throw new Error('개인정보 동의문을 저장해주세요.');
-   if(current.kind==='submission' && !policies.some(p=>p.stage_id===event.current_stage_id && p.kind==='work-license')) throw new Error('응모작 활용 동의문을 저장해주세요.');
-  }
-  const policyWrites:D1PreparedStatement[]=[];
-  for(const stage of stagesFor(draft)){
-   const items=draft.pages[stage].find(m=>m.type==='consent')?.consents;
-   if(!items||items.some(item=>!item.body.trim()))continue;
-   for(const item of items){
-    const body=encodePolicy(item);
-    const old=await this.statement('SELECT p.body FROM stage_policies s JOIN event_policies p ON p.event_id=s.event_id AND p.id=s.policy_id WHERE s.event_id=? AND s.stage_id=? AND s.kind=?',id,stage,item.id).first<{body:string}>();
-    if(old?.body===body)continue;
-    const policyId=crypto.randomUUID(),digest=await sha256Hex(body);
-    policyWrites.push(this.statement('INSERT INTO event_policies(event_id,id,kind,version,body,digest,created_at) SELECT ?,?,?,coalesce(max(version),0)+1,?,?,? FROM event_policies WHERE event_id=? AND kind=?',id,policyId,item.id,body,digest,Date.now(),id,item.id),this.statement('INSERT INTO stage_policies VALUES(?,?,?,?,1) ON CONFLICT(event_id,stage_id,kind) DO UPDATE SET policy_id=excluded.policy_id',id,stage,item.id,policyId),this.audit(id,'policy.version_created',{stageId:stage,kind:item.id,policyId}));
-   }
-   if(items.length)policyWrites.push(this.statement(`DELETE FROM stage_policies WHERE event_id=? AND stage_id=? AND kind NOT IN (${items.map(()=>'?').join(',')})`,id,stage,...items.map(item=>item.id)));
-  }
+  const policyWrites=await this.policyStatements(id,draft,stagesFor(draft));
   const guard=crypto.randomUUID();
   await this.db.batch([
    this.statement("UPDATE events SET published_json=draft_json,visibility='published',revision=revision+1,updated_at=? WHERE id=? AND revision=?",Date.now(),id,revision),
@@ -282,13 +283,17 @@ export class EventsRepository {
   if(event.published_json){try{assertPublishable(JSON.parse(event.published_json),stage.kind);}catch(error){blockers.push(error instanceof Error?error.message:'페이지 구성을 확인해주세요.');}}
   if(stage.kind==='voting'&&(!candidates.length||candidates.some(c=>!c.confirmed)))blockers.push('후보를 먼저 확정해주세요.');
   if(stage.kind==='result'&&!result)blockers.push('결과 문구를 먼저 선택해주세요.');
-  const policies=await this.policies(id);
-  if(stage.kind!=='result'&&!policies.some(p=>p.stage_id===stageId&&p.kind==='privacy'))blockers.push('개인정보 동의문을 저장해주세요.');
-  if(stage.kind==='submission'&&!policies.some(p=>p.stage_id===stageId&&p.kind==='work-license'))blockers.push('응모작 활용 동의문을 저장해주세요.');
+  const published=event.published_json?JSON.parse(event.published_json) as EventDraft:null;
+  const consent=published?.pages[stage.kind].find(m=>m.type==='consent');
+  const items=consent?consentItems(consent,stage.kind):[];
+  const privacyReady=!!published?.privacyPolicy?.trim()&&items.some(i=>i.id==='privacy');
+  const licenseReady=items.some(i=>i.id==='work-license');
+  if(stage.kind!=='result'&&!privacyReady)blockers.push('개인정보 동의문을 저장해주세요.');
+  if(stage.kind==='submission'&&!licenseReady)blockers.push('응모작 활용 동의문을 저장해주세요.');
   const checks=[{id:'published',label:'페이지 공개',complete:!!event.published_json&&event.visibility==='published'},
    {id:'page',label:'페이지 구성·푸터 설정',complete:!!event.published_json&&!blockers.some(b=>!['페이지를 먼저 공개해주세요.','후보를 먼저 확정해주세요.','결과 문구를 먼저 선택해주세요.','개인정보 동의문을 저장해주세요.','응모작 활용 동의문을 저장해주세요.'].includes(b))}];
-  if(stage.kind!=='result')checks.push({id:'privacy',label:'개인정보 동의문',complete:policies.some(p=>p.stage_id===stageId&&p.kind==='privacy')});
-  if(stage.kind==='submission')checks.push({id:'license',label:'응모작 활용 동의문',complete:policies.some(p=>p.stage_id===stageId&&p.kind==='work-license')});
+  if(stage.kind!=='result')checks.push({id:'privacy',label:'개인정보 처리방침 · 푸터',complete:privacyReady});
+  if(stage.kind==='submission')checks.push({id:'license',label:'응모작 활용 동의문',complete:licenseReady});
   if(stage.kind==='voting')checks.push({id:'candidates',label:'투표 후보 확정',complete:candidates.length>0&&candidates.every(c=>!!c.confirmed)});
   if(stage.kind==='result')checks.push({id:'result',label:'최종 문구 선정',complete:!!result});
   return {revision:event.revision,activityRevision:event.activity_revision,stage,candidates,result,checks,blockers,canTransition:blockers.length===0};
@@ -306,12 +311,12 @@ export class EventsRepository {
   assertPublishable(draft,preview.stage.kind);
   if(preview.stage.kind==='voting' && (!preview.candidates.length || preview.candidates.some(c=>!c.confirmed))) throw new Error('후보를 먼저 확정해주세요.');
   if(preview.stage.kind==='result' && !preview.result) throw new Error('결과 문구를 먼저 선택해주세요.');
-  const policies=await this.policies(id);
-  if(preview.stage.kind!=='result' && !policies.some(p=>p.stage_id===stageId && p.kind==='privacy')) throw new Error('개인정보 동의문을 저장해주세요.');
+  const policyWrites=await this.policyStatements(id,draft,[preview.stage.kind]);
   const guard=crypto.randomUUID();
   await this.db.batch([
    this.statement("UPDATE events SET current_stage_id=?,revision=revision+1,updated_at=? WHERE id=? AND visibility='published' AND revision=? AND activity_revision=?",stageId,Date.now(),id,revision,activity),
    this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
+   ...policyWrites,
    this.statement('UPDATE event_stages SET accepting=CASE WHEN id=? THEN ? ELSE 0 END WHERE event_id=?',stageId,Number(accepting && preview.stage.kind!=='result'),id),
    this.audit(id,'stage.changed',{stageId,accepting}),this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
   ]);

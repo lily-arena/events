@@ -1080,3 +1080,11 @@
 
 .stage-configuration {padding:24px;margin:20px 0;background:#fff;border:1px solid #e1e4e8;border-radius:12px;}
 @media(max-width:600px){.stage-configuration,.current-stage-card,.next-stage-card {padding:16px;}}
+/* Each editor rail has its own scroll area; the document keeps its existing scroll. */
+.builder-layout .settings-panel,.builder-layout .modules-panel {align-self:start;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+.builder-layout .settings-panel {padding-bottom:20px;}
+.builder-layout .settings-panel .panel-title,.builder-layout .modules-panel .panel-title {position:sticky;top:0;background:white;z-index:2;}
+.settings-content .module-actions {grid-column:1/-1;display:grid;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line);}
+.module-actions .remove-module {margin:0;}
+.settings-content .consent-item-actions {display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+@media(max-width:760px){.builder-layout .settings-panel {max-height:70dvh;}.builder-layout .modules-panel {max-height:40dvh;}}

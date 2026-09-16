@@ -1,3 +1,4 @@
+import {InfoCardsEditor} from './InfoCardsEditor';
 import {ScheduleEditor} from './ScheduleEditor';
 import {consentItems} from '../../../../packages/event-builder/src/consents';
 import {AdminNotice,type AdminTone} from '../../../../packages/ui/src/AdminStatus';
@@ -480,103 +481,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                     <h2>모듈 설정</h2>
                   </div>
                   {selectedModule ? (
-                    <div className="settings-content">
-                      {selectedModule.type==="hero"&&<label className="field">이벤트 제목<input aria-label="이벤트 제목" value={draft.title} onChange={e=>update(d=>({...d,title:e.target.value}))}/><small>SEOUL ARENA 아래에 표시됩니다. 모든 단계에 공통 적용됩니다.</small></label>}
-
-                      <label className="field">
-                        제목
-                        <textarea
-                          aria-label="제목"
-                          value={selectedModule.title}
-                          onChange={(e) =>
-                            update((d) => ({
-                              ...d,
-                              pages: {
-                                ...d.pages,
-                                [stage]: d.pages[stage].map((m) =>
-                                  m.id === moduleId
-                                    ? { ...m, title: e.target.value }
-                                    : m,
-                                ),
-                              },
-                            }))
-                          }
-                        />
-                      </label>
-                      {selectedModule.type==='image'&&<>{storage?.upload&&<label className="field">이미지 업로드<input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const id=await storage.upload!(draft.id,file);patchModule({imageAssetId:id,imageUrl:''});setMessage('이미지를 업로드했습니다. 페이지를 저장해주세요.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'업로드하지 못했습니다.');}}}/></label>}<label className="field">이미지 주소<input type="url" value={selectedModule.imageUrl??''} onChange={e=>patchModule({imageUrl:e.target.value})} placeholder="https://.../image.jpg"/></label><label className="field">이미지 설명<input value={selectedModule.imageAlt??''} onChange={e=>patchModule({imageAlt:e.target.value})}/></label></>}
-                      <label className="field">제목 크기<select aria-label="제목 크기" value={selectedModule.titleSize??(selectedModule.type==="hero"?"body":"h3")} onChange={e=>patchModule({titleSize:e.target.value as TextSize})}><option value="h1">H1 · 가장 크게</option><option value="h2">H2 · 크게</option><option value="h3">H3 · 중간</option><option value="h4">H4 · 작게</option><option value="body">본문 크기</option></select></label>
-                      <label className="field">제목 색상<select aria-label="제목 색상" value={selectedModule.titleTone??"emphasis"} onChange={e=>patchModule({titleTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
-                      <label className="field">
-                        설명
-                        <textarea
-                          aria-label="설명"
-                          className="body-editor"
-                          value={selectedModule.body}
-                          onChange={(e) =>
-                            update((d) => ({
-                              ...d,
-                              pages: {
-                                ...d.pages,
-                                [stage]: d.pages[stage].map((m) =>
-                                  m.id === moduleId
-                                    ? { ...m, body: e.target.value }
-                                    : m,
-                                ),
-                              },
-                            }))
-                          }
-                        />
-                        <small>줄을 바꾸면 문단이 나뉩니다.</small>
-                      </label>
-                      <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
-                      {selectedModule.type==='schedule'&&<ScheduleEditor items={selectedModule.schedule??[]} onChange={schedule=>patchModule({schedule})}/>}
-                      {selectedModule.type==='form'&&<fieldset><legend>추가 입력 항목</legend>{(selectedModule.fields??[]).map((field,index)=><div key={field.id}><label className="field">항목 이름<input value={field.label} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,label:e.target.value}:f)})}/></label><label className="field">입력 방식<select value={field.type} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,type:e.target.value as typeof f.type}:f)})}><option value="text">짧은 글</option><option value="textarea">긴 글</option><option value="number">숫자</option><option value="select">선택형</option></select></label><label><input type="checkbox" checked={field.required} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,required:e.target.checked}:f)})}/>필수 입력</label><label className="field">최대 글자 수<input type="number" min="1" max="2000" value={field.maxLength} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,maxLength:Number(e.target.value)}:f)})}/></label>{field.type==='select'&&<label className="field">선택지 (줄바꿈으로 구분)<textarea value={field.options.join('\n')} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,options:e.target.value.split('\n')}:f)})}/></label>}<Button onClick={()=>patchModule({fields:selectedModule.fields!.filter((_,i)=>i!==index)})}>항목 삭제</Button></div>)}<Button disabled={(selectedModule.fields?.length??0)>=10} onClick={()=>patchModule({fields:[...(selectedModule.fields??[]),{id:crypto.randomUUID(),label:'추가 항목',type:'text',required:false,maxLength:200,options:[]}]})}>입력 항목 추가</Button></fieldset>}
-                      {selectedModule.type === "form" &&
-                        stage === "submission" && (
-                          <label className="field">
-                            문구 최대 글자 수
-                            <input
-                              type="number"
-                              min="1"
-                              max="500"
-                              value={draft.maxLength}
-                              onChange={(e) =>
-                                update((d) => ({
-                                  ...d,
-                                  maxLength: Math.max(
-                                    1,
-                                    Math.min(500, Number(e.target.value) || 1),
-                                  ),
-                                }))
-                              }
-                            />
-                          </label>
-                        )}
-
-                      {selectedModule.type === "form" && stage === "voting" && (
-                        <label className="field">
-                          중복 투표
-                          <select
-                            aria-label="중복 투표"
-                            value={draft.allowRepeatVotes ? "allow" : "deny"}
-                            onChange={(e) =>
-                              update((d) => ({
-                                ...d,
-                                allowRepeatVotes: e.target.value === "allow",
-                              }))
-                            }
-                          >
-                            <option value="deny">제한하기</option>
-                            <option value="allow">허용하기</option>
-                          </select>
-                          <small>
-                            연락처·이메일·인스타그램 중 하나라도 같으면 추가
-                            투표를 제한하는 방식입니다. 저장 후 페이지를 공개하면 적용됩니다.
-                          </small>
-                        </label>
-                      )}
-                      {selectedModule.type==='consent'&&<fieldset><legend>동의 항목</legend>{consentItems(selectedModule,stage).map((item,index)=><div key={item.id}><label className="field">체크박스 문구<input value={item.label} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,label:e.target.value}:x)})}/></label><label className="field">자세히 보기 원문<textarea rows={8} value={item.body} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,body:e.target.value}:x)})}/></label>{!['privacy','work-license'].includes(item.id)&&<Button onClick={()=>patchModule({consents:consentItems(selectedModule,stage).filter(x=>x.id!==item.id)})}>항목 삭제</Button>}</div>)}<Button disabled={consentItems(selectedModule,stage).length>=12} onClick={()=>patchModule({consents:[...consentItems(selectedModule,stage),{id:'consent-'+crypto.randomUUID(),label:'추가 동의 항목',body:''}]})}>동의 항목 추가</Button><small>저장 후 페이지를 공개하면 적용됩니다. 기존 참여자의 동의 원문은 보존됩니다.</small></fieldset>}
-<div className="settings-divider" />
+                    <div className="settings-content"><div className="module-actions">
                       <div className="field">
                         모듈 순서
                         <div className="row">
@@ -638,7 +543,104 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                         }}
                       >
                         모듈 삭제
-                      </button>
+                      </button></div>
+                      {selectedModule.type==="hero"&&<label className="field">이벤트 제목<input aria-label="이벤트 제목" value={draft.title} onChange={e=>update(d=>({...d,title:e.target.value}))}/><small>SEOUL ARENA 아래에 표시됩니다. 모든 단계에 공통 적용됩니다.</small></label>}
+
+                      <label className="field">
+                        제목
+                        <textarea
+                          aria-label="제목"
+                          value={selectedModule.title}
+                          onChange={(e) =>
+                            update((d) => ({
+                              ...d,
+                              pages: {
+                                ...d.pages,
+                                [stage]: d.pages[stage].map((m) =>
+                                  m.id === moduleId
+                                    ? { ...m, title: e.target.value }
+                                    : m,
+                                ),
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                      {selectedModule.type==='image'&&<>{storage?.upload&&<label className="field">이미지 업로드<input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const id=await storage.upload!(draft.id,file);patchModule({imageAssetId:id,imageUrl:''});setMessage('이미지를 업로드했습니다. 페이지를 저장해주세요.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'업로드하지 못했습니다.');}}}/></label>}<label className="field">이미지 주소<input type="url" value={selectedModule.imageUrl??''} onChange={e=>patchModule({imageUrl:e.target.value})} placeholder="https://.../image.jpg"/></label><label className="field">이미지 설명<input value={selectedModule.imageAlt??''} onChange={e=>patchModule({imageAlt:e.target.value})}/></label></>}
+                      <label className="field">제목 크기<select aria-label="제목 크기" value={selectedModule.titleSize??(selectedModule.type==="hero"?"body":"h3")} onChange={e=>patchModule({titleSize:e.target.value as TextSize})}><option value="h1">H1 · 가장 크게</option><option value="h2">H2 · 크게</option><option value="h3">H3 · 중간</option><option value="h4">H4 · 작게</option><option value="body">본문 크기</option></select></label>
+                      <label className="field">제목 색상<select aria-label="제목 색상" value={selectedModule.titleTone??"emphasis"} onChange={e=>patchModule({titleTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
+                      <label className="field">
+                        설명
+                        <textarea
+                          aria-label="설명"
+                          className="body-editor"
+                          value={selectedModule.body}
+                          onChange={(e) =>
+                            update((d) => ({
+                              ...d,
+                              pages: {
+                                ...d.pages,
+                                [stage]: d.pages[stage].map((m) =>
+                                  m.id === moduleId
+                                    ? { ...m, body: e.target.value }
+                                    : m,
+                                ),
+                              },
+                            }))
+                          }
+                        />
+                        <small>줄을 바꾸면 문단이 나뉩니다.</small>
+                      </label>
+                      <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
+                      {selectedModule.type==='intro'&&<InfoCardsEditor items={selectedModule.cards??[{id:selectedModule.id+'-card',title:selectedModule.title,text:'',description:selectedModule.body}]} onChange={cards=>patchModule({cards,...(!selectedModule.cards?{title:'',body:''}:{})})}/>}
+                      {selectedModule.type==='schedule'&&<ScheduleEditor items={selectedModule.schedule??[]} onChange={schedule=>patchModule({schedule})}/>}
+                      {selectedModule.type==='form'&&<fieldset><legend>추가 입력 항목</legend>{(selectedModule.fields??[]).map((field,index)=><div key={field.id}><label className="field">항목 이름<input value={field.label} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,label:e.target.value}:f)})}/></label><label className="field">입력 방식<select value={field.type} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,type:e.target.value as typeof f.type}:f)})}><option value="text">짧은 글</option><option value="textarea">긴 글</option><option value="number">숫자</option><option value="select">선택형</option></select></label><label><input type="checkbox" checked={field.required} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,required:e.target.checked}:f)})}/>필수 입력</label><label className="field">최대 글자 수<input type="number" min="1" max="2000" value={field.maxLength} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,maxLength:Number(e.target.value)}:f)})}/></label>{field.type==='select'&&<label className="field">선택지 (줄바꿈으로 구분)<textarea value={field.options.join('\n')} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,options:e.target.value.split('\n')}:f)})}/></label>}<Button onClick={()=>patchModule({fields:selectedModule.fields!.filter((_,i)=>i!==index)})}>항목 삭제</Button></div>)}<Button disabled={(selectedModule.fields?.length??0)>=10} onClick={()=>patchModule({fields:[...(selectedModule.fields??[]),{id:crypto.randomUUID(),label:'추가 항목',type:'text',required:false,maxLength:200,options:[]}]})}>입력 항목 추가</Button></fieldset>}
+                      {selectedModule.type === "form" &&
+                        stage === "submission" && (
+                          <label className="field">
+                            문구 최대 글자 수
+                            <input
+                              type="number"
+                              min="1"
+                              max="500"
+                              value={draft.maxLength}
+                              onChange={(e) =>
+                                update((d) => ({
+                                  ...d,
+                                  maxLength: Math.max(
+                                    1,
+                                    Math.min(500, Number(e.target.value) || 1),
+                                  ),
+                                }))
+                              }
+                            />
+                          </label>
+                        )}
+
+                      {selectedModule.type === "form" && stage === "voting" && (
+                        <label className="field">
+                          중복 투표
+                          <select
+                            aria-label="중복 투표"
+                            value={draft.allowRepeatVotes ? "allow" : "deny"}
+                            onChange={(e) =>
+                              update((d) => ({
+                                ...d,
+                                allowRepeatVotes: e.target.value === "allow",
+                              }))
+                            }
+                          >
+                            <option value="deny">제한하기</option>
+                            <option value="allow">허용하기</option>
+                          </select>
+                          <small>
+                            연락처·이메일·인스타그램 중 하나라도 같으면 추가
+                            투표를 제한하는 방식입니다. 저장 후 페이지를 공개하면 적용됩니다.
+                          </small>
+                        </label>
+                      )}
+                      {selectedModule.type==='consent'&&<fieldset><legend>동의 항목</legend>{consentItems(selectedModule,stage).map((item,index)=><div key={item.id}><div className="consent-item-actions"><span>항목 {index+1}</span>{([-1,1] as const).map(offset=><Button key={offset} kind="small" disabled={index+offset<0||index+offset>=consentItems(selectedModule,stage).length} onClick={()=>{const items=[...consentItems(selectedModule,stage)];[items[index],items[index+offset]]=[items[index+offset]!,items[index]!];patchModule({consents:items});}}>{offset===-1?'위로':'아래로'}</Button>)}</div><label className="field">체크박스 문구<input value={item.label} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,label:e.target.value}:x)})}/></label><label className="field">자세히 보기 원문 (선택)<textarea rows={8} value={item.body} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,body:e.target.value}:x)})}/></label>{!['privacy','work-license'].includes(item.id)&&<Button onClick={()=>patchModule({consents:consentItems(selectedModule,stage).filter(x=>x.id!==item.id)})}>항목 삭제</Button>}</div>)}<Button disabled={consentItems(selectedModule,stage).length>=12} onClick={()=>patchModule({consents:[...consentItems(selectedModule,stage),{id:'consent-'+crypto.randomUUID(),label:'추가 동의 항목',body:''}]})}>동의 항목 추가</Button><small>저장 후 페이지를 공개하면 적용됩니다. 기존 참여자의 동의 원문은 보존됩니다.</small></fieldset>}
+
                     </div>
                   ) : (
                     <p className="empty-state">수정할 모듈을 선택해주세요.</p>
@@ -725,7 +727,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                       ...d.pages,
                       [stage]: [
                         ...d.pages[stage],
-                        { id, type, title: name, body: type==='schedule'?'':"내용을 입력해주세요.", ...(type==='schedule'?{schedule:[{id:crypto.randomUUID(),title:'접수 기간',start:'',end:'',description:''}]}:{}) },
+                        { id, type, title: name, body: type==='schedule'?'':"내용을 입력해주세요.", ...(type==='intro'?{title:'',body:'',cards:[{id:crypto.randomUUID(),title:'새 안내',text:'',description:''}]}:{}), ...(type==='schedule'?{schedule:[{id:crypto.randomUUID(),title:'접수 기간',start:'',end:'',description:''}]}:{}) },
                       ],
                     },
                   }));

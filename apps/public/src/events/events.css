@@ -285,7 +285,7 @@
     font-size: 11px;
   }
   .notices-section ul {
-    font-size: 13px;
+    font-size: 12px;
   }
   .public-footer {
     padding-bottom: 40px;
@@ -317,3 +317,11 @@
 /* Shared footer typography and alignment for links and buttons. */
 .event-page .public-footer {justify-content:center;align-items:center;flex-wrap:nowrap;gap:28px;}
 .event-page .public-footer :is(button,a) {display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:auto;min-height:44px;margin:0;padding:0;font-family:var(--font-body, Pretendard, sans-serif);font-size:14px;font-weight:500;line-height:1.5;letter-spacing:normal;white-space:nowrap;color:var(--muted);text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:1px;}
+
+/* Match the mobile viewport inside the content editor as well. */
+.preview-canvas.mobile .notices-section ul {font-size:12px;}
+
+/* Consent copy uses the same body size as the adjacent notices container. */
+.event-page .consent-row label {font-size:14px;font-weight:400;}
+@media(max-width:760px){.event-page .consent-row label {font-size:12px;}}
+.preview-canvas.mobile .consent-row label {font-size:12px;}

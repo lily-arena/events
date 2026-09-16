@@ -3,3 +3,12 @@
 .event-schedule h3 {font:700 18px/1.5 var(--event-font, sans-serif);color:var(--ink);margin:0 0 12px;}
 .event-schedule .event-schedule-date {font:600 16px/1.7 var(--event-font, sans-serif);color:var(--ink);margin:0;}
 .event-schedule .event-schedule-description {font:400 14px/1.7 var(--event-font, sans-serif);color:var(--muted);margin:12px 0 0;white-space:pre-line;}
+.event-container {padding:24px;background:var(--soft);border-radius:var(--radius);min-width:0;overflow-wrap:anywhere;}
+.event-info-cards .event-schedule-date {white-space:pre-line;}
+.event-info-cards .event-container {text-align:center;}
+.event-page .consent-section.event-container,.event-page .notices-section.event-container {margin:24px 0;padding:24px;}
+.event-page .consent-row {padding:6px 0;gap:12px;}
+.event-page .consent-row label {min-height:44px;cursor:pointer;}
+.event-page .consent-row input {width:24px;height:24px;flex:0 0 24px;}
+.event-page .consent-row button {min-height:44px;}
+@media(max-width:600px){.event-page .consent-section.event-container,.event-page .notices-section.event-container {padding:20px 16px;}}

@@ -1,0 +1,12 @@
+import {createRoot} from 'react-dom/client';
+import {useState} from 'react';
+import '../../../packages/ui/src/tokens.css';
+import AdminPreview from '../../admin/src/events/AdminPreview';
+import {EventPage} from '../../public/src/events/EventPage';
+import {firstSeat} from '../../../packages/event-builder/src/model';
+const sample=structuredClone(firstSeat);
+sample.pages.submission=sample.pages.submission.filter(m=>m.type==='hero'||m.type==='form');
+sample.pages.submission.splice(1,0,{id:'review-schedule',type:'schedule',title:'이벤트 일정',body:'',schedule:[{id:'date',title:'접수 기간',start:'2026-09-17',end:'2026-09-30',description:'오후 6시 마감'}]}, {id:'review-info',type:'intro',title:'이벤트 안내',body:'',cards:[{id:'one',title:'참여 대상',text:'서울아레나를 기다리는 누구나',description:'당신의 한 문장을 남겨주세요.'},{id:'two',title:'선정 혜택',text:'첫 좌석에 문구 각인',description:'최종 선정된 문구는 첫 좌석에 새겨집니다.'}]});
+sample.pages.submission.push({id:'review-consent',type:'consent',title:'동의 사항',body:'',consents:[{id:'privacy',label:'개인정보 수집·이용에 동의합니다.',body:''},{id:'work-license',label:'응모작 활용에 동의합니다.',body:'선정된 문구는 서울아레나의 첫 좌석과 이벤트 안내에 활용됩니다.'}]},{id:'review-notices',type:'notices',title:'유의사항',body:'직접 작성한 문구만 응모할 수 있습니다.\n타인의 권리를 침해하는 내용은 선정에서 제외될 수 있습니다.'});
+function Preview(){const [editor,setEditor]=useState(false);return <><nav style={{position:'sticky',top:0,zIndex:50,background:'#fff',padding:12,display:'flex',gap:12}}><button className="button" onClick={()=>setEditor(false)}>공개 화면 보기</button><button className="button" onClick={()=>setEditor(true)}>편집기 보기</button></nav>{editor?<AdminPreview storage={{initialEvents:[sample],account:"검토용",local:true,save:async d=>d,create:async d=>d}}/>:<EventPage event={sample} stage="submission" embedded/>}</>};
+createRoot(document.getElementById('root')!).render(<Preview/>);

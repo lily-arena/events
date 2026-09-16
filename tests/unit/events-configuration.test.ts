@@ -33,3 +33,14 @@ describe('schedule configuration',()=>{
   expect(()=>validateDraft(draft('',''),'id')).not.toThrow();
  });
 });
+
+describe('information cards',()=>{
+ it('preserves legacy copy and allows only bounded card content',()=>{
+  const draft=structuredClone(firstSeat);
+  draft.pages.submission.push({id:'info',type:'intro',title:'기존 제목',body:'기존 본문',cards:[{id:'one',title:'대상',text:'누구나',description:'안내'}]});
+  const result=validateDraft(draft,'id').pages.submission.at(-1)!;
+  expect(result.body).toBe('기존 본문');expect(result.cards?.[0]?.text).toBe('누구나');
+  draft.pages.submission.at(-1)!.cards=Array.from({length:13},(_,i)=>({id:String(i),title:'',text:'',description:''}));
+  expect(()=>validateDraft(draft,'id')).toThrow('12개');
+ });
+});

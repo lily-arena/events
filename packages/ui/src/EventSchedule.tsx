@@ -1,6 +1,6 @@
 import type {ScheduleItem} from '../../event-builder/src/model';
 import './event-schedule.css';
-function dateLabel(value:string){return value.split('-').join('.');}
+export function dateLabel(value:string){const date=new Date(`${value}T00:00:00Z`);return `${value.split('-').join('.')} (${'일월화수목금토'[date.getUTCDay()]})`;}
 export function EventSchedule({items}:{items:ScheduleItem[]}) {
  return <ol className="event-schedule">{items.map(item=><li key={item.id}>
   <h3>{item.title}</h3>

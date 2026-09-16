@@ -1,3 +1,4 @@
+import {consentItems} from './consents';
 import { moduleNames, validSlug, type EventDraft, type PageModule, type InputField, type Stage } from './model';
 
 export class ConfigurationError extends Error {}
@@ -41,11 +42,17 @@ function schedule(value:unknown):import('./model').ScheduleItem[]|undefined {
  const items=(value as unknown[]).map(v=>{const i=object(v),start=date(i.start),end=date(i.end);if(end&&(!start||end<start))fail('종료일은 시작일 이후로 입력해주세요.');return {id:text(i.id,100,true),title:text(i.title,100,true),start,end,description:text(i.description,500)};});
  if(new Set(items.map(i=>i.id)).size!==items.length)fail('일정 항목이 중복되었습니다.');return items;
 }
+function cards(value:unknown):import('./model').InfoCard[]|undefined {
+ if(value===undefined)return undefined;
+ if(!Array.isArray(value)||value.length>12)fail('안내 카드는 최대 12개입니다.');
+ const items=(value as unknown[]).map(v=>{const i=object(v);return {id:text(i.id,100,true),title:text(i.title,500),text:text(i.text,1000),description:text(i.description,20000)};});
+ if(new Set(items.map(i=>i.id)).size!==items.length)fail('안내 카드가 중복되었습니다.');return items;
+}
 function module(value: unknown): PageModule {
   const m = object(value);
   // Construct an allow-listed object. Never retain arbitrary HTML, CSS or unknown fields.
   return { id: text(m.id, 100, true), type: choice(m.type, Object.keys(moduleNames) as PageModule['type'][]),
-    schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
+    cards:cards(m.cards),schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
     title: text(m.title, 500), body: text(m.body, 20000),
     titleSize: choice(m.titleSize, ['h1','h2','h3','h4','body'] as const, 'h3'),
     titleTone: choice(m.titleTone, ['default','emphasis'] as const, 'emphasis'),
@@ -86,6 +93,8 @@ export function assertPublishable(draft: EventDraft, stage: Stage) {
   if(!draft.privacyPolicy?.trim()||!draft.contactUrl)fail('개인정보 처리방침과 문의 주소를 입력해주세요.');
   if (!modules.some(m => m.type === 'hero')) fail('이벤트 소개를 추가해주세요.');
   if (stage !== 'result' && !modules.some(m => m.type === 'consent')) fail('개인정보 동의를 추가해주세요.');
+  const consent=modules.find(m=>m.type==='consent');
+  if(stage!=='result'&&consent){const items=consentItems(consent,stage);if(!items.some(i=>i.id==='privacy'))fail('개인정보 동의 항목을 추가해주세요.');if(stage==='submission'&&!items.some(i=>i.id==='work-license'))fail('응모작 활용 동의 항목을 추가해주세요.');}
   if (stage === 'submission' && !modules.some(m => m.type === 'form')) fail('참여자 입력을 추가해주세요.');
   if (stage === 'voting' && !modules.some(m => m.type === 'candidates')) fail('후보·투표를 추가해주세요.');
   if (stage === 'result' && !modules.some(m => m.type === 'result')) fail('최종 결과를 추가해주세요.');

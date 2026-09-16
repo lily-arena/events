@@ -1,3 +1,4 @@
+import {EventInfoCards} from '../../../../packages/ui/src/EventInfoCards';
 import {EventSchedule} from '../../../../packages/ui/src/EventSchedule';
 import {consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
 import { useState, useRef } from "react";
@@ -88,15 +89,10 @@ export function EventPage({
               case "image":
                 return <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>{(module.imageUrl||module.imageAssetId)&&<img className="event-image" src={module.imageAssetId?(embedded?`/api/admin/events/${event.id}/assets/${module.imageAssetId}`:`/api/events/${event.slug}/assets/${module.imageAssetId}`):module.imageUrl} alt={module.imageAlt??''} loading="lazy" referrerPolicy="no-referrer"/>}<ModuleTitle module={module}/><ModuleBody module={module}/></section>;
               case "intro":
-                return (
-                  <section
-                    className="event-section intro-section"
-                    key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}
-                  >
-                    <ModuleTitle module={module}/>
-                    <ModuleBody module={module}/>
-                  </section>
-                );
+                return <section className="event-section intro-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
+                  {module.cards&&<><ModuleTitle module={module}/><ModuleBody module={module}/></>}
+                  <EventInfoCards items={module.cards??[{id:module.id,title:module.title,text:'',description:module.body}]}/>
+                </section>;
               case "form":
                 return (
                   <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
@@ -175,15 +171,15 @@ export function EventPage({
                   </section>
                 );
               case "consent": {
-                const items=live?live.policies.map(p=>({...p,...decodePolicy(p.body),label:decodePolicy(p.body).label??(p.kind==='privacy'?'개인정보 수집·이용에 동의합니다.':'응모작 활용에 동의합니다.')})):consentItems(module,stage).map(p=>({...p,required:1}));
-                return <section className="consent-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}><ModuleTitle module={module}/>{items.map(p=><div className="consent-row" key={p.id}><label><input type="checkbox" name="policy" value={p.id} required={!!p.required}/>{p.required?'[필수]':'[선택]'} {p.label}</label><button type="button" onClick={()=>setPolicy({id:p.id,type:'text',title:p.label,body:p.body||'동의문 내용을 입력해주세요.'})}>자세히 보기</button></div>)}</section>;
+                const items=live?[...live.policies].sort((a,b)=>{const order=consentItems(module,stage).map(i=>i.id);return order.indexOf(a.kind)-order.indexOf(b.kind);}).map(p=>({...p,...decodePolicy(p.body),label:decodePolicy(p.body).label??(p.kind==='privacy'?'개인정보 수집·이용에 동의합니다.':'응모작 활용에 동의합니다.')})):consentItems(module,stage).map(p=>({...p,required:1}));
+                return <section className="consent-section event-container" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}><ModuleTitle module={module}/>{items.map(p=><div className="consent-row" key={p.id}><label><input type="checkbox" name="policy" value={p.id} required={!!p.required}/>{p.required?'[필수]':'[선택]'} {p.label}</label>{p.body.trim()&&<button type="button" onClick={()=>setPolicy({id:p.id,type:'text',title:p.label,body:p.body})}>자세히 보기</button>}</div>)}</section>;
               }
               case "schedule":
                 return <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}><ModuleTitle module={module}/><ModuleBody module={module}/><EventSchedule items={module.schedule??[]}/></section>;
               case "notices":
                 return (
                   <section
-                    className="event-section notices-section"
+                    className="event-section notices-section event-container"
                     key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}
                   >
                     <ModuleTitle module={module}/>

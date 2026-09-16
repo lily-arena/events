@@ -13,8 +13,10 @@ export type Stage = "submission" | "voting" | "result";
 export type TextSize = "h1" | "h2" | "h3" | "h4" | "body";
 export type TextTone = "default" | "emphasis";
 export interface InputField {id:string;label:string;type:"text"|"textarea"|"number"|"select";required:boolean;maxLength:number;options:string[]}
+export interface InfoCard {id:string;title:string;text:string;description:string}
 export interface ScheduleItem {id:string;title:string;start:string;end:string;description:string}
 export interface PageModule {
+  cards?: InfoCard[];
   schedule?: ScheduleItem[];
   consents?: import("./consents").ConsentItem[];
   fields?: InputField[];
