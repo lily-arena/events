@@ -5,7 +5,7 @@ const created=await api(base,{...firstSeat,slug:'delete-ui-'+Date.now(),title:'�
 assert.equal((await fetch('http://127.0.0.1:8792/api/events/'+created.slug)).status,200);
 const b=await chromium.launch({channel:'chrome'});try{
  const p=await b.newPage({viewport:{width:1440,height:1000}});await p.route('**/api/admin/events',async route=>{const response=await route.fetch();await route.fulfill({response,json:(await response.json()).filter(x=>x.id===created.id)});});
- await p.goto('http://127.0.0.1:5190/admin');await p.locator('.overview-stats').waitFor();for(const label of ['전체','공개','작성 중'])assert.equal(await p.locator('.overview-stats').getByText(label,{exact:true}).count(),1);
+ await p.goto('http://127.0.0.1:5190/admin');await p.locator('.overview-stats').waitFor();assert.equal(await p.getByRole('tab',{name:'공개',exact:true}).count(),1);for(const label of ['전체','공개','작성 중'])assert.equal(await p.locator('.overview-stats').getByText(label,{exact:true}).count(),1);
  await p.locator('.admin-sidebar').getByRole('button',{name:'콘텐츠 편집',exact:true}).click();assert.equal(await p.getByRole('button',{name:'공개 페이지에서 테스트',exact:true}).count(),0);assert.equal(await p.locator('.editor-main').getByRole('button',{name:'운영',exact:true}).count(),0);
  await p.locator('.admin-sidebar').getByRole('button',{name:'운영',exact:true}).click();await p.locator('.admin-sidebar').getByRole('button',{name:'설정',exact:true}).click();await p.getByRole('button',{name:'이벤트 삭제',exact:true}).click();
  let dialog=p.getByRole('dialog');await dialog.getByRole('heading',{name:'이벤트 삭제 범위 확인'}).waitFor();assert.ok(await dialog.getByRole('button',{name:'다음: 최종 확인'}).isDisabled());

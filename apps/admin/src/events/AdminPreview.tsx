@@ -312,7 +312,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                 <Tabs.Root value={filter} onValueChange={setFilter}>
                   <Tabs.List aria-label="이벤트 상태" className="filter-tabs">
                     <Tabs.Trigger value="all">전체</Tabs.Trigger>
-                    <Tabs.Trigger value="published">공개 구성</Tabs.Trigger>
+                    <Tabs.Trigger value="published">공개</Tabs.Trigger>
                     <Tabs.Trigger value="draft">작성 중</Tabs.Trigger>
                   </Tabs.List>
                 </Tabs.Root>
