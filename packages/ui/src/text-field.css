@@ -1,0 +1,98 @@
+/* Field tokens inherit through the public theme, including future event templates. */
+:root {
+  --field-background: #fff;
+  --field-text: #181818;
+  --field-label: #666;
+  --field-placeholder: #929292;
+  --field-border: #e2e2e2;
+  --field-hover: #888;
+  --field-active: #2563ff;
+  --field-error: #d71920;
+  --field-success: #00845a;
+  --field-disabled-background: #f7f7f7;
+  --field-disabled-text: #aaa;
+  --field-radius: 4px;
+  --field-height: 44px;
+}
+.event-page, .field-theme-light { --field-active: #181818; --field-hover: #181818; }
+.event-theme-dark {
+  --field-background: #000;
+  --field-text: #fff;
+  --field-label: #b5b5b5;
+  --field-placeholder: #929292;
+  --field-border: #444;
+  --field-hover: #fff;
+  --field-active: #fff;
+  --field-error: #ff6268;
+  --field-success: #26cf98;
+  --field-disabled-background: #151515;
+  --field-disabled-text: #777;
+}
+.text-field { display: grid; gap: 8px; min-width: 0; font: inherit; text-align: left; }
+.text-field > label, .text-field > small { color: var(--field-label); font-size: 12px; font-weight: 400; line-height: 1.5; }
+.text-field-control { position: relative; min-width: 0; }
+.text-field .text-field-control :is(input, select) {
+  display: block; width: 100%; min-height: var(--field-height); margin: 0;
+  padding: 10px 40px 10px 12px; border: 1px solid var(--field-border);
+  border-radius: var(--field-radius); background: var(--field-background);
+  color: var(--field-text); font: inherit; font-size: 14px; line-height: 1.6;
+  box-shadow: none; outline: none; caret-color: var(--field-active);
+}
+.text-field input::placeholder { color: var(--field-placeholder); opacity: 1; }
+.text-field :is(input:not(:read-only), select):hover:not(:disabled), .text-field[data-preview="hover"] :is(input, select) { border-color: var(--field-hover); }
+.text-field :is(input, select):focus, .text-field[data-preview="focus"] :is(input, select) { border-color: var(--field-active); outline: none; }
+.text-field :is(input, select):disabled { background: var(--field-disabled-background); color: var(--field-disabled-text); cursor: not-allowed; opacity: 1; }
+.text-field input:disabled::placeholder { color: var(--field-disabled-text); }
+.text-field[data-state="error"] input { border-color: var(--field-error); }
+.text-field[data-state="error"] > :is(label,small), .text-field[data-state="error"] .text-field-icon { color: var(--field-error); }
+.text-field[data-state="success"] .text-field-icon { color: var(--field-success); }
+.text-field-icon, .text-field-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; display: grid; place-items: center; }
+.text-field-icon { pointer-events: none; }
+.text-field-icon svg, .text-field-clear svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.text-field-clear { border: 0; padding: 0; border-radius: 0; background: transparent; color: var(--field-placeholder); }
+.text-field-clear circle { fill: currentColor; stroke: none; }
+.text-field-clear path { stroke: var(--field-background); }
+.text-field-clear:focus-visible { outline: 1px solid var(--field-active); outline-offset: 0; }
+.text-field-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.text-field select { appearance: none; cursor: pointer; }
+.text-field .select-chevron { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; color: var(--field-label); }
+.select-chevron path { fill: none; stroke: currentColor; stroke-width: 1.5; }
+.text-field select:disabled + .select-chevron { color: var(--field-disabled-text); }
+
+/* Shared appearance for existing controls as well as new builder modules.
+   Context specificity supersedes legacy screen styles without changing their layout/fonts. */
+:root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"], [type="button"], [type="submit"], [type="reset"]), textarea, select) {
+  border: 1px solid var(--field-border);
+  border-radius: var(--field-radius);
+  background-color: var(--field-background);
+  color: var(--field-text);
+  padding: 10px 12px;
+  box-shadow: none;
+  outline: none;
+  caret-color: var(--field-active);
+}
+:root body :is(.admin-shell, .event-page, .dialog) :is(input, textarea)::placeholder { color: var(--field-placeholder); opacity: 1; }
+:root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"], [type="button"], [type="submit"], [type="reset"]), textarea, select):hover:not(:disabled):not([readonly]) { border-color: var(--field-hover); }
+:root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"], [type="button"], [type="submit"], [type="reset"]), textarea, select):focus { border-color: var(--field-active); outline: none; }
+:root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"]), textarea, select):disabled { background-color: var(--field-disabled-background); color: var(--field-disabled-text); border-color: var(--field-border); opacity: 1; cursor: not-allowed; }
+:root body :is(.admin-shell, .event-page, .dialog) :is(input, textarea):disabled::placeholder { color: var(--field-disabled-text); }
+:root body :is(.admin-shell, .event-page, .dialog) select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20'%3E%3Cpath d='m4 7 6 6 6-6' fill='none' stroke='%23737373' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+}
+:root body .event-theme-dark select { color-scheme: dark; }
+:root body :is(.admin-shell, .event-page, .dialog) .text-field-select select { background-image: none; }
+:root body :is(.admin-shell, .event-page, .dialog) .field { color: var(--field-label); font-weight: 400; }
+/* Errors follow actual validation, not mere emptiness on initial render. Selects keep neutral styling. */
+:root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"]), textarea):is([aria-invalid="true"], :user-invalid) { border-color: var(--field-error); }
+:root body :is(.admin-shell, .event-page, .dialog) .field:has(:is(input:not([type="checkbox"], [type="radio"]), textarea):is([aria-invalid="true"], :user-invalid)) { color: var(--field-error); }
+:root body :is(.admin-shell, .event-page, .dialog) .field-error { color: var(--field-error); }
+:root body :is(.admin-shell, .event-page, .dialog) .text-field-control input { padding-right: 40px; }
+:root body :is(.admin-shell, .event-page, .dialog) .text-field[data-state="error"] input { border-color: var(--field-error); }
+
+:root body :is(.admin-shell, .event-page, .dialog) :is(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"], [type="button"], [type="submit"], [type="reset"]), select) { min-height: var(--field-height); }
