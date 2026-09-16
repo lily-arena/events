@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:events && mv dist/events/index.html dist/events/app.html",
+  "buildCommand": "npm run build:events && node scripts/build-page-shell.mjs && mv dist/events/index.html dist/events/app.html",
   "outputDirectory": "dist/events",
   "framework": null,
   "rewrites": [
