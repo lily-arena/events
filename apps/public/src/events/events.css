@@ -357,3 +357,14 @@
 .image-header .header-sticky-title .event-title-display {margin-inline:auto;}
 @media(max-width:760px){.image-header .header-sticky-title{top:36px;}}
 
+
+/* Align details with the consent's first line while retaining a 44px hit area. */
+.event-page .consent-row > button {
+  display:flex;
+  align-items:flex-start;
+  flex-shrink:0;
+  margin:0;
+  padding:0;
+  min-height:44px;
+  line-height:calc(var(--text-body) * 1.95);
+}
