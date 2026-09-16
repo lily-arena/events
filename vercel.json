@@ -13,15 +13,15 @@
     },
     {
       "source": "/admin",
-      "destination": "/app.html"
+      "destination": "/api/page"
     },
     {
       "source": "/admin/:path*",
-      "destination": "/app.html"
+      "destination": "/api/page"
     },
     {
       "source": "/:slug",
-      "destination": "/app.html"
+      "destination": "/api/page"
     }
   ],
   "headers": [
