@@ -179,6 +179,8 @@
   flex-shrink: 0;
 }
 .candidate-number {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 14px;
   color: var(--muted);
 }

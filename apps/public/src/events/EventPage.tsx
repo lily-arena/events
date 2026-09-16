@@ -89,7 +89,7 @@ export function EventPage({
                 </section>;
               case "form":
                 return (
-                  <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
+                  <section className="event-section form-section event-container" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
                     <ModuleTitle module={module}/>
                     <ModuleBody module={module}/>
                     <ParticipationFields items={formInputs(module,stage,event.maxLength)}/>
@@ -120,7 +120,7 @@ export function EventPage({
                 );
               case "candidates":
                 return (
-                  <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
+                  <section className="event-section voting-section event-container" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
                     <ModuleTitle module={module}/>
                     <ModuleBody module={module}/>
                     {!live && <p className="sample-note">화면 검토를 위한 예시 후보입니다.</p>}
@@ -143,7 +143,7 @@ export function EventPage({
               case "result":
                 return (
                   <section
-                    className="event-section result-module"
+                    className="event-section result-module event-container"
                     key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}
                   >
                     <ModuleTitle module={live?.result?{...module,title:live.result.message}:module}/>
