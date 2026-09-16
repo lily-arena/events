@@ -10,13 +10,15 @@ export interface EventRow {
 }
 /** Only authenticated AdminData RPC methods may construct this repository. */
 export class EventsRepository {
- constructor(private db: D1Database, private actor: string) {}
+ constructor(private db: D1Database, private actor: string, private activeVerified=false) {}
  private statement(sql: string, ...args: unknown[]) { return this.db.prepare(sql).bind(...args); }
  private audit(eventId: string, action: string, metadata = {}) {
   return this.statement('INSERT INTO event_audit(id,event_id,admin_id,action,metadata_json,created_at) VALUES(?,?,?,?,?,?)', crypto.randomUUID(),eventId,this.actor,action,JSON.stringify(metadata),Date.now());
  }
  async requireActive() {
+  if(this.activeVerified)return;
   if (!await this.statement('SELECT id FROM platform_admins WHERE id=? AND active=1',this.actor).first()) throw new Error('로그인이 필요합니다.');
+  this.activeVerified=true;
  }
  async list() {
   await this.requireActive();
@@ -98,6 +100,12 @@ export class EventsRepository {
   await this.get(id);await this.audit(id,success?'privacy.revealed':'privacy.reveal_failed',{participantId}).run();
  }
  async participants(id:string) {await this.get(id);return (await this.statement('SELECT id,entry_id,vote_id,masked_json,retention_until FROM event_participants WHERE event_id=? ORDER BY retention_until DESC LIMIT 200',id).all()).results;}
+ async participantPage(id:string,page:number){
+  await this.get(id);if(!Number.isSafeInteger(page)||page<1)throw new Error('페이지를 확인해주세요.');
+  const count=await this.statement('SELECT count(*) AS total FROM event_participants WHERE event_id=?',id).first<{total:number}>(),total=count?.total??0,pageSize=50,current=Math.min(page,Math.max(1,Math.ceil(total/pageSize)));
+  const entries=(await this.statement("SELECT p.id,p.masked_json,p.entry_id,p.vote_id,coalesce(e.message,c.message,'') AS message,coalesce(e.created_at,v.created_at) AS created_at,coalesce(e.status,'vote') AS status FROM event_participants p LEFT JOIN event_entries e ON e.event_id=p.event_id AND e.id=p.entry_id LEFT JOIN event_votes v ON v.event_id=p.event_id AND v.id=p.vote_id LEFT JOIN event_candidates c ON c.event_id=v.event_id AND c.stage_id=v.stage_id AND c.round=v.round AND c.id=v.candidate_id WHERE p.event_id=? ORDER BY coalesce(e.created_at,v.created_at) DESC,p.id LIMIT ? OFFSET ?",id,pageSize,(current-1)*pageSize).all()).results;
+  return {entries,total,page:current,pageSize};
+ }
  async auditLog(id:string) {await this.get(id);return (await this.statement('SELECT action,target_id,metadata_json,created_at FROM event_audit WHERE event_id=? ORDER BY created_at DESC LIMIT 200',id).all()).results;}
  async deletePrivate(id:string,participantId:string) {
   await this.get(id); const guard=crypto.randomUUID();
@@ -227,6 +235,19 @@ export class EventsRepository {
    this.audit(id,'entry.reviewed',{entryId,status}),
    this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
   ]);
+  return this.statement('SELECT id,message,created_at,status,revision,0 AS locked FROM event_entries WHERE event_id=? AND id=?',id,entryId).first();
+ }
+ async reorderCandidates(id:string,stageId:string,ids:string[],activity:number){
+  const event=await this.get(id),items=await this.candidates(id,stageId);
+  if(!Array.isArray(ids)||ids.length!==items.length||new Set(ids).size!==ids.length||items.some(c=>!ids.includes(c.id as string)||c.confirmed))throw new Error('확정 전 후보 전체의 순서를 확인해주세요.');
+  if(!ids.length)throw new Error('후보가 없습니다.');
+  const guard=crypto.randomUUID(),offset=Math.max(...items.map(c=>Number(c.position)))+ids.length+1;
+  await this.db.batch([
+   this.statement('UPDATE events SET revision=revision+1 WHERE id=? AND revision=? AND activity_revision=?',id,event.revision,activity),this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
+   this.statement('UPDATE event_candidates SET position=position+? WHERE event_id=? AND stage_id=? AND round=(SELECT round FROM event_stages WHERE event_id=? AND id=?) AND confirmed=0',offset,id,stageId,id,stageId),
+   ...ids.map((candidate,index)=>this.statement('UPDATE event_candidates SET position=? WHERE event_id=? AND stage_id=? AND id=? AND round=(SELECT round FROM event_stages WHERE event_id=? AND id=?) AND confirmed=0',index,id,stageId,candidate,id,stageId)),
+   this.audit(id,'candidates.reordered',{stageId}),this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
+  ]);return this.get(id);
  }
  async confirmCandidates(id:string,stageId:string,activity:number) {
   const event=await this.get(id);
@@ -264,10 +285,21 @@ export class EventsRepository {
   const policies=await this.policies(id);
   if(stage.kind!=='result'&&!policies.some(p=>p.stage_id===stageId&&p.kind==='privacy'))blockers.push('개인정보 동의문을 저장해주세요.');
   if(stage.kind==='submission'&&!policies.some(p=>p.stage_id===stageId&&p.kind==='work-license'))blockers.push('응모작 활용 동의문을 저장해주세요.');
-  return {revision:event.revision,activityRevision:event.activity_revision,stage,candidates,result,blockers,canTransition:blockers.length===0};
+  const checks=[{id:'published',label:'페이지 공개',complete:!!event.published_json&&event.visibility==='published'},
+   {id:'page',label:'페이지 구성·푸터 설정',complete:!!event.published_json&&!blockers.some(b=>!['페이지를 먼저 공개해주세요.','후보를 먼저 확정해주세요.','결과 문구를 먼저 선택해주세요.','개인정보 동의문을 저장해주세요.','응모작 활용 동의문을 저장해주세요.'].includes(b))}];
+  if(stage.kind!=='result')checks.push({id:'privacy',label:'개인정보 동의문',complete:policies.some(p=>p.stage_id===stageId&&p.kind==='privacy')});
+  if(stage.kind==='submission')checks.push({id:'license',label:'응모작 활용 동의문',complete:policies.some(p=>p.stage_id===stageId&&p.kind==='work-license')});
+  if(stage.kind==='voting')checks.push({id:'candidates',label:'투표 후보 확정',complete:candidates.length>0&&candidates.every(c=>!!c.confirmed)});
+  if(stage.kind==='result')checks.push({id:'result',label:'최종 문구 선정',complete:!!result});
+  return {revision:event.revision,activityRevision:event.activity_revision,stage,candidates,result,checks,blockers,canTransition:blockers.length===0};
  }
  async transition(id:string,stageId:string,revision:number,activity:number,accepting:boolean) {
   const event=await this.get(id);
+  if(accepting===false&&event.current_stage_id===stageId){const guard=crypto.randomUUID();await this.db.batch([
+   this.statement('UPDATE events SET revision=revision+1,updated_at=? WHERE id=? AND revision=? AND activity_revision=?',Date.now(),id,revision,activity),this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
+   this.statement('UPDATE event_stages SET accepting=0 WHERE event_id=?',id),this.audit(id,'stage.changed',{stageId,accepting:false}),this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
+  ]);return this.get(id);}
+
   if(!event.published_json) throw new Error('페이지를 먼저 공개해주세요.');
   const preview=await this.transitionPreview(id,stageId),draft=JSON.parse(event.published_json) as EventDraft;
   if(!preview.canTransition)throw new Error(preview.blockers[0]);

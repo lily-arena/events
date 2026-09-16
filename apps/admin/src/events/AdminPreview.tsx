@@ -99,6 +99,8 @@ function readDrafts(): EventDraft[] {
 }
 export interface EditorStorage {
  initialEvents: EventDraft[];
+ load?:(id:string)=>Promise<EventDraft>;
+ publish?:(draft:EventDraft)=>Promise<EventDraft>;
  refresh?:()=>Promise<EventDraft[]>;
  operations?: (event: EventDraft, section?: string, onChanged?: (event:EventDraft)=>void) => ReactNode;
  account: string;
@@ -126,6 +128,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
   const [noticeTone,setNoticeTone]=useState<AdminTone>('info');
   const [message, setMessage] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving,setSaving]=useState(false);
   const event = events.find((x) => x.id === selected) ?? events[0] ?? firstSeat;
   const active = event.pages[stage].find((m) => m.id === moduleId);
   const [draft, setDraft] = useState<EventDraft>(structuredClone(event));
@@ -134,7 +137,8 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
     const timer = setTimeout(() => setMessage(""), 6000);
     return () => clearTimeout(timer);
   }, [message]);
-  function openEditor(e: EventDraft) {
+  async function openEditor(e: EventDraft) {
+    if(storage?.load){try{e=await storage.load(e.id);}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'불러오지 못했습니다.');return;}}
     setSelected(e.id);
     setDraft(structuredClone(e));
     setStage(stagesFor(e)[0]!);
@@ -156,12 +160,15 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
       return false;
     }
   }
+  async function publish(){if(!storage?.publish||saving)return;setSaving(true);const submitted=draft;try{const next=await storage.publish(submitted);setEvents(items=>items.map(e=>e.id===next.id?next:e));setDraft(current=>JSON.stringify(current)===JSON.stringify(submitted)?next:current);setSaved(true);setNoticeTone('success');setMessage('페이지와 동의문을 공개했습니다.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'공개하지 못했습니다.');}finally{setSaving(false);}}
   async function save() {
+    if(saving)return;
     if (storage) {
+      setSaving(true);const submitted=draft;
       try {
         const result = await storage.save(draft);
-        setEvents(events.map(e=>e.id===result.id?result:e)); setDraft(result); setSaved(true); setNoticeTone('success');setMessage("저장했습니다.");
-      } catch(error) { setNoticeTone('error');setMessage(error instanceof Error?error.message:"저장하지 못했습니다."); }
+        setEvents(events.map(e=>e.id===result.id?result:e)); setDraft(current=>JSON.stringify(current)===JSON.stringify(submitted)?result:current); setSaved(true); setNoticeTone('success');setMessage("저장했습니다.");
+      } catch(error) { setNoticeTone('error');setMessage(error instanceof Error?error.message:"저장하지 못했습니다."); } finally {setSaving(false);}
       return;
     }
     const next = events.map((e) =>
@@ -216,7 +223,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
           {events.map(item=><div className="nav-event" key={item.id}>
             <h2 className="nav-event-title">{item.title}</h2>
             <div className="nav-event-children">
-              <button className={selected===item.id&&view==='editor'?'active':''} onClick={()=>{if(selected===item.id)setView('editor');else openEditor(item);}}>콘텐츠 편집</button>
+              <button className={selected===item.id&&view==='editor'?'active':''} onClick={()=>{openEditor(item);}}>콘텐츠 편집</button>
               <button className={selected===item.id&&view==='operations'?'nav-expanded':''} aria-expanded={selected===item.id&&view==='operations'} onClick={()=>{setSelected(item.id);setView('operations');}}>운영</button>
               {selected===item.id&&view==='operations'&&<div className="nav-operation-children">{[['overview','공개·일정'],['review','응모작 심사'],['voting','후보·투표'],['result','결과 선정'],['privacy','개인정보'],['audit','운영 기록'],['settings','설정']].map(([key,label])=><button key={key} aria-current={operationSection===key?'page':undefined} className={operationSection===key?'active':''} onClick={()=>setOperationSection(key!)}>{label}</button>)}</div>}
             </div>
@@ -389,14 +396,15 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                   >
                     공개 페이지에서 테스트
                   </Button>
-                  <Button kind="primary" onClick={save}>
+                  <Button kind="primary" disabled={saving} onClick={save}>
                     {storage ? "저장" : "검토용 저장"}
                   </Button>
+                  {storage?.publish&&<Button disabled={saving} onClick={publish}>저장 후 공개</Button>}
                   {storage?.operations && <Button onClick={() => setView("operations")}>운영</Button>}
                 </div>
               </div>
-              <details className="stage-configuration"><summary>문의·개인정보</summary><label className="field">문의 주소<input value={draft.contactUrl??''} onChange={e=>update(d=>({...d,contactUrl:e.target.value}))} placeholder="mailto:담당자@seoularena.net"/></label><label className="field">개인정보 처리방침<textarea rows={8} value={draft.privacyPolicy??''} onChange={e=>update(d=>({...d,privacyPolicy:e.target.value}))}/></label><label className="field">개인정보 보유 기간<select value={draft.retentionDays??90} onChange={e=>update(d=>({...d,retentionDays:Number(e.target.value)}))}>{[30,90,180,365].map(days=><option key={days} value={days}>참여일로부터 {days}일</option>)}</select></label></details>
-              <details open className="stage-configuration"><summary>단계 구성</summary>{stagesFor(draft).map((s,i)=><div key={s}><span>{stageNames[s]}</span><Button disabled={i===0} onClick={()=>update(d=>{const order=[...stagesFor(d)];[order[i-1],order[i]]=[order[i]!,order[i-1]!];return {...d,stageOrder:order};})}>앞으로 이동</Button><Button disabled={stagesFor(draft).length===1} onClick={()=>{const order=stagesFor(draft).filter(x=>x!==s);update(d=>({...d,stageOrder:order}));if(stage===s)setStage(order[0]!);}}>단계 제외</Button></div>)}{(['submission','voting','result'] as Stage[]).filter(s=>!stagesFor(draft).includes(s)).map(s=><Button key={s} onClick={()=>update(d=>({...d,stageOrder:[...stagesFor(d),s]}))}>{stageNames[s]} 추가</Button>)}</details>
+              <section className="stage-configuration"><h2>단계 구성</h2>{stagesFor(draft).map((s,i)=><div key={s}><span className="stage-order-number">{String(i+1).padStart(2,'0')}</span><strong>{stageNames[s]}</strong><Button disabled={i===0} onClick={()=>update(d=>{const order=[...stagesFor(d)];[order[i-1],order[i]]=[order[i]!,order[i-1]!];return {...d,stageOrder:order};})}>앞으로 이동</Button><Button disabled={stagesFor(draft).length===1} onClick={()=>{const order=stagesFor(draft).filter(x=>x!==s);update(d=>({...d,stageOrder:order}));if(stage===s)setStage(order[0]!);}}>단계 제외</Button></div>)}{(['submission','voting','result'] as Stage[]).filter(s=>!stagesFor(draft).includes(s)).map(s=><Button key={s} onClick={()=>update(d=>({...d,stageOrder:[...stagesFor(d),s]}))}>{stageNames[s]} 추가</Button>)}</section>
+              <section className="stage-configuration"><h2>푸터 설정</h2><label className="field">개인정보 처리방침<textarea rows={8} value={draft.privacyPolicy??''} onChange={e=>update(d=>({...d,privacyPolicy:e.target.value}))}/></label><label className="field">문의 주소<input type="email" value={(draft.contactUrl??'').replace(/^mailto:/,'')} onChange={e=>update(d=>({...d,contactUrl:e.target.value?'mailto:'+e.target.value:''}))} placeholder="담당자@seoularena.net"/></label><label className="field">개인정보 보유 기간<select value={draft.retentionDays??90} onChange={e=>update(d=>({...d,retentionDays:Number(e.target.value)}))}>{[30,90,180,365].map(days=><option key={days} value={days}>참여일로부터 {days}일</option>)}</select></label></section>
               <div className="editor-stepbar">
                 <Tabs.Root
                   value={stage}

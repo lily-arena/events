@@ -12,10 +12,10 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
   if (!identity.subject || !/^[^@]+@seoularena\.net$/.test(identity.email)) throw new Error('회사 계정으로 로그인해주세요.');
   // This entrypoint is private: only the authenticated Admin Worker receives its service binding.
   const subject = `${identity.provider}:${identity.subject}`;
-  await this.env.DB.prepare('INSERT INTO platform_admins(id,subject,email,created_at) VALUES(?,?,?,?) ON CONFLICT(subject) DO NOTHING').bind(crypto.randomUUID(),subject,identity.email,Date.now()).run();
-  const admin = await this.env.DB.prepare('SELECT id,active FROM platform_admins WHERE subject=?').bind(subject).first<{id:string;active:number}>();
+  let admin=await this.env.DB.prepare('SELECT id,active FROM platform_admins WHERE subject=?').bind(subject).first<{id:string;active:number}>();
+  if(!admin){await this.env.DB.prepare('INSERT INTO platform_admins(id,subject,email,created_at) VALUES(?,?,?,?) ON CONFLICT(subject) DO NOTHING').bind(crypto.randomUUID(),subject,identity.email,Date.now()).run();admin=await this.env.DB.prepare('SELECT id,active FROM platform_admins WHERE subject=?').bind(subject).first<{id:string;active:number}>();}
   if (!admin?.active) throw new Error('접근 권한이 없습니다.');
-  return new EventsRepository(this.env.DB,admin.id);
+  return new EventsRepository(this.env.DB,admin.id,true);
  }
  async list(identity: Identity) {return (await this.repository(identity)).list();}
  async get(identity: Identity,id:string) {return (await this.repository(identity)).get(id);}
@@ -36,6 +36,8 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async publish(identity:Identity,id:string,revision:number) {return (await this.repository(identity)).publish(id,revision);}
  async candidates(identity:Identity,id:string,stage:string) {return (await this.repository(identity)).candidates(id,stage);}
  async review(identity:Identity,id:string,entry:string,status:string,revision:number) {return (await this.repository(identity)).review(id,entry,status,revision);}
+ async reorderCandidates(identity:Identity,id:string,stage:string,ids:string[],activity:number){return (await this.repository(identity)).reorderCandidates(id,stage,ids,activity);}
+ async participantPage(identity:Identity,id:string,page:number){return (await this.repository(identity)).participantPage(id,page);}
  async confirmCandidates(identity:Identity,id:string,stage:string,activity:number) {return (await this.repository(identity)).confirmCandidates(id,stage,activity);}
  async selectResult(identity:Identity,id:string,stage:string,voting:string,candidate:string,revision:number) {return (await this.repository(identity)).selectResult(id,stage,voting,candidate,revision);}
  async transitionPreview(identity:Identity,id:string,stage:string) {return (await this.repository(identity)).transitionPreview(id,stage);}

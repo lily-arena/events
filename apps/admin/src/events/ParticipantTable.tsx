@@ -1,0 +1,12 @@
+import {useEffect,useState} from 'react';
+import {Button} from '../../../../packages/ui/src';
+import {AdminNotice,ReviewStatus} from '../../../../packages/ui/src/AdminStatus';
+import {adminRequest as api} from './operations-api';
+interface Person {id:string;masked_json:string;message:string;created_at:number;status:string;vote_id:string|null}
+interface Page {entries:Person[];page:number;pageSize:number;total:number}
+const date=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'short',timeStyle:'short'});
+export function ParticipantTable({base,onReveal,onDelete,busy,refreshKey}:{base:string;onReveal:(id:string)=>void;onDelete:(id:string)=>void;busy:boolean;refreshKey:string}){
+ const [data,setData]=useState<Page|null>(null),[page,setPage]=useState(1),[error,setError]=useState(''),[loading,setLoading]=useState(false);
+ useEffect(()=>{if(refreshKey)return;let active=true;setLoading(true);api<Page>(base+'/participant-page?page='+page).then(value=>{if(active)setData(value);}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[base,page,refreshKey]);
+ return <section><h2>개인정보</h2>{error&&<AdminNotice tone="error">{error}</AdminNotice>}<p>{loading?'불러오는 중…':`총 ${data?.total??0}건 · 한국 시간`}</p><div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>참여</th><th>문구</th><th>접수일시</th><th>상태</th><th>이름</th><th>연락처</th><th>이메일</th><th>인스타그램</th><th>관리</th></tr></thead><tbody>{data?.entries.map(person=>{const masked=JSON.parse(person.masked_json);return <tr key={person.id}><td>{person.vote_id?'투표':'공모'}</td><td className="entry-message">{person.message}</td><td>{date.format(person.created_at)}</td><td>{person.status==='vote'?'투표 완료':<ReviewStatus status={person.status}/>}</td>{['name','phone','email','instagram'].map(key=><td key={key}>{masked[key]||'—'}</td>)}<td><Button disabled={busy} onClick={()=>onReveal(person.id)}>원문 보기</Button><Button disabled={busy} onClick={()=>onDelete(person.id)}>개인정보 삭제</Button></td></tr>;})}{!loading&&!data?.entries.length&&<tr><td colSpan={9}>참여 정보가 없습니다.</td></tr>}</tbody></table></div><div className="review-pagination"><Button disabled={busy||loading||!data||data.page<=1} onClick={()=>setPage(data!.page-1)}>이전</Button><span>{data?.page??1} / {Math.max(1,Math.ceil((data?.total??0)/50))} 페이지</span><Button disabled={busy||loading||!data||data.page*50>=data.total} onClick={()=>setPage(data!.page+1)}>다음</Button></div></section>;
+}

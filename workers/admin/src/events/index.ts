@@ -27,7 +27,7 @@ export default {
    const assetMatch=/^\/api\/admin\/events\/([^/]+)\/assets\/([^/]+)$/.exec(url.pathname);
    if(assetMatch&&request.method==='GET'){const asset=await env.DATA.asset(identity,assetMatch[1]!,assetMatch[2]!);if(!asset)return new Response(null,{status:404});return new Response(Uint8Array.from(atob(asset.content_base64),c=>c.charCodeAt(0)),{headers:{'Content-Type':asset.mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
    if(url.pathname==='/api/admin/session') return json({email:identity.email,local:identity.provider==='local'});
-   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(duplicate|archive|reset-scope|reset-prepare|reset|entries|review-entries|policies|policy|publish|candidates|review|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
+   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(duplicate|archive|reset-scope|reset-prepare|reset|entries|review-entries|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
    if(!match) return json({error:'페이지를 찾을 수 없습니다.'},404);
    const id=match[1],action=match[2], input=body?JSON.parse(body):{};
    if(!id && request.method==='GET') return json(await env.DATA.list(identity));
@@ -48,6 +48,8 @@ export default {
    if(id && action==='publish' && request.method==='POST') return json(await env.DATA.publish(identity,id,input.revision));
    if(id && action==='candidates' && request.method==='GET') return json(await env.DATA.candidates(identity,id,url.searchParams.get('stage')??'voting'));
    if(id && action==='review' && request.method==='POST') return json(await env.DATA.review(identity,id,input.entryId,input.status,input.revision));
+   if(id && action==='reorder-candidates' && request.method==='POST')return json(await env.DATA.reorderCandidates(identity,id,input.stage,input.ids,input.activityRevision));
+   if(id && action==='participant-page' && request.method==='GET')return json(await env.DATA.participantPage(identity,id,Number(url.searchParams.get('page')??1)));
    if(id && action==='confirm-candidates' && request.method==='POST') return json(await env.DATA.confirmCandidates(identity,id,input.stage,input.activityRevision));
    if(id && action==='result' && request.method==='POST') return json(await env.DATA.selectResult(identity,id,input.stage,input.votingStage,input.candidateId,input.revision));
    if(id && action==='transition-preview' && request.method==='GET') return json(await env.DATA.transitionPreview(identity,id,url.searchParams.get('stage')??'submission'));
