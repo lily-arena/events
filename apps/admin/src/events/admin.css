@@ -1088,3 +1088,5 @@
 .module-actions .remove-module {margin:0;}
 .settings-content .consent-item-actions {display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 @media(max-width:760px){.builder-layout .settings-panel {max-height:70dvh;}.builder-layout .modules-panel {max-height:40dvh;}}
+
+.settings-content .input-fields-editor fieldset>.row {flex-direction:row;flex-wrap:wrap;gap:6px;}

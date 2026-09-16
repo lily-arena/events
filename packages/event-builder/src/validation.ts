@@ -1,3 +1,4 @@
+import {inputTypes,inputLimit,type FormInput} from './inputs';
 import {consentItems} from './consents';
 import { moduleNames, validSlug, type EventDraft, type PageModule, type InputField, type Stage } from './model';
 
@@ -32,7 +33,7 @@ function fields(value:unknown):InputField[] {
 function consents(value:unknown):import('./consents').ConsentItem[]|undefined {
  if(value===undefined)return undefined;
  if(!Array.isArray(value)||value.length>12)fail('동의 항목은 최대 12개입니다.');
- const items=(value as unknown[]).map(v=>{const item=object(v),id=text(item.id,100,true);if(!/^[a-z0-9-]+$/.test(id))fail('동의 항목을 확인해주세요.');return {id,label:text(item.label,300,true),body:text(item.body,20000)};});
+ const items=(value as unknown[]).map(v=>{const item=object(v),id=text(item.id,100,true);if(!/^[a-z0-9-]+$/.test(id))fail('동의 항목을 확인해주세요.');if(item.required!==undefined&&typeof item.required!=='boolean')fail('필수 여부를 확인해주세요.');return {id,label:text(item.label,300,true),body:text(item.body,20000),required:item.required!==false};});
  if(new Set(items.map(i=>i.id)).size!==items.length)fail('동의 항목이 중복되었습니다.');return items;
 }
 function schedule(value:unknown):import('./model').ScheduleItem[]|undefined {
@@ -48,11 +49,22 @@ function cards(value:unknown):import('./model').InfoCard[]|undefined {
  const items=(value as unknown[]).map(v=>{const i=object(v);return {id:text(i.id,100,true),title:text(i.title,500),text:text(i.text,1000),description:text(i.description,20000)};});
  if(new Set(items.map(i=>i.id)).size!==items.length)fail('안내 카드가 중복되었습니다.');return items;
 }
+function inputFields(value:unknown):FormInput[]|undefined {
+ if(value===undefined)return undefined;
+ if(!Array.isArray(value)||value.length>15)fail('입력 항목은 최대 15개입니다.');
+ const items=(value as unknown[]).map(v=>{const i=object(v),binding=choice(i.binding,['message','name','phone','email','instagram','extra'] as const),type=choice(i.type,inputTypes(binding));const id=text(i.id,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('입력 항목을 확인해주세요.');
+ if(typeof i.required!=='boolean'||(binding!=='extra'&&!i.required))fail('기본 입력 항목은 필수입니다.');
+ if(!Number.isInteger(i.maxLength)||Number(i.maxLength)<1||Number(i.maxLength)>inputLimit(binding))fail('입력 글자 제한을 확인해주세요.');
+ const options=Array.isArray(i.options)&&i.options.length<=30?i.options.map(x=>text(x,100,true)):[];if(type==='select'&&!options.length)fail('선택지를 입력해주세요.');
+ return {id,binding,type,required:i.required as boolean,maxLength:Number(i.maxLength),label:text(i.label,100,true),placeholder:text(i.placeholder,300),help:text(i.help,1000),options};});
+ if(new Set(items.map(i=>i.id)).size!==items.length)fail('입력 항목이 중복되었습니다.');
+ return items;
+}
 function module(value: unknown): PageModule {
   const m = object(value);
   // Construct an allow-listed object. Never retain arbitrary HTML, CSS or unknown fields.
   return { id: text(m.id, 100, true), type: choice(m.type, Object.keys(moduleNames) as PageModule['type'][]),
-    cards:cards(m.cards),schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
+    inputFields:inputFields(m.inputFields),cards:cards(m.cards),schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
     title: text(m.title, 500), body: text(m.body, 20000),
     titleSize: choice(m.titleSize, ['h1','h2','h3','h4','body'] as const, 'h3'),
     titleTone: choice(m.titleTone, ['default','emphasis'] as const, 'emphasis'),
@@ -81,11 +93,16 @@ export function validateDraft(value: unknown, id: string): EventDraft {
     for (const functional of ['form','consent','candidates','result']) {
       if (validated.filter(m => m.type === functional).length > 1) fail('참여 기능은 페이지마다 하나씩만 넣을 수 있습니다.');
     }
+    for(const form of validated.filter(m=>m.type==='form'&&m.inputFields)){
+      const bindings=form.inputFields!.filter(f=>f.binding!=='extra').map(f=>f.binding).sort();
+      const expected=stage==='submission'?['email','message','name','phone']:stage==='voting'?['email','instagram','phone']:[];
+      if(JSON.stringify(bindings)!==JSON.stringify(expected))fail('기본 입력 항목을 확인해주세요.');
+    }
     resultPages[stage] = validated;
   }
   return { id, slug, title: text(input.title, 100, true), description: text(input.description, 1000),
     template: choice(input.template, ['first-seat','submission','voting']), pages: resultPages,
-    privacyPolicy,contactUrl,retentionDays:Number(retentionDays),stageOrder, visibility: 'draft', updatedAt: new Date().toISOString(), maxLength: maxLength as number,
+    privacyPolicy,contactUrl,retentionDays:Number(retentionDays),stageOrder, visibility: 'draft', updatedAt: new Date().toISOString(), maxLength: resultPages.submission.find(m=>m.type==='form')?.inputFields?.find(f=>f.binding==='message')?.maxLength??maxLength as number,
     allowRepeatVotes: input.allowRepeatVotes as boolean };
 }
 export function assertPublishable(draft: EventDraft, stage: Stage) {

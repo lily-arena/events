@@ -174,10 +174,11 @@ export class EventsRepository {
     const old=await this.statement('SELECT p.body FROM stage_policies s JOIN event_policies p ON p.event_id=s.event_id AND p.id=s.policy_id WHERE s.event_id=? AND s.stage_id=? AND s.kind=?',id,stage,item.id).first<{body:string}>();
     // Older drafts kept policy copy separately. Preserve that copy until explicitly edited.
     const resolved=!module.consents&&old?{...item,...decodePolicy(old.body)}:item;
-    const body=encodePolicy(resolved,item.id==='privacy'?draft.privacyPolicy:undefined);
+    const required=item.required!==false;
+    const body=encodePolicy({...resolved,required},item.id==='privacy'?draft.privacyPolicy:undefined);
     if(old?.body===body)continue;
     const policyId=crypto.randomUUID(),digest=await sha256Hex(body);
-    writes.push(this.statement('INSERT INTO event_policies(event_id,id,kind,version,body,digest,created_at) SELECT ?,?,?,coalesce(max(version),0)+1,?,?,? FROM event_policies WHERE event_id=? AND kind=?',id,policyId,item.id,body,digest,Date.now(),id,item.id),this.statement('INSERT INTO stage_policies VALUES(?,?,?,?,1) ON CONFLICT(event_id,stage_id,kind) DO UPDATE SET policy_id=excluded.policy_id',id,stage,item.id,policyId),this.audit(id,'policy.version_created',{stageId:stage,kind:item.id,policyId}));
+    writes.push(this.statement('INSERT INTO event_policies(event_id,id,kind,version,body,digest,created_at) SELECT ?,?,?,coalesce(max(version),0)+1,?,?,? FROM event_policies WHERE event_id=? AND kind=?',id,policyId,item.id,body,digest,Date.now(),id,item.id),this.statement('INSERT INTO stage_policies VALUES(?,?,?,?,?) ON CONFLICT(event_id,stage_id,kind) DO UPDATE SET policy_id=excluded.policy_id,required=excluded.required',id,stage,item.id,policyId,Number(required)),this.audit(id,'policy.version_created',{stageId:stage,kind:item.id,policyId}));
    }
    if(items.length)writes.push(this.statement(`DELETE FROM stage_policies WHERE event_id=? AND stage_id=? AND kind NOT IN (${items.map(()=>'?').join(',')})`,id,stage,...items.map(item=>item.id)));
   }

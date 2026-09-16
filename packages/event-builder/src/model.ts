@@ -16,6 +16,7 @@ export interface InputField {id:string;label:string;type:"text"|"textarea"|"numb
 export interface InfoCard {id:string;title:string;text:string;description:string}
 export interface ScheduleItem {id:string;title:string;start:string;end:string;description:string}
 export interface PageModule {
+  inputFields?: import("./inputs").FormInput[];
   cards?: InfoCard[];
   schedule?: ScheduleItem[];
   consents?: import("./consents").ConsentItem[];

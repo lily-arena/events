@@ -1,3 +1,5 @@
+import {ParticipationFields} from './ParticipationFields';
+import {formInputs} from '../../../../packages/event-builder/src/inputs';
 import {EventInfoCards} from '../../../../packages/ui/src/EventInfoCards';
 import {EventSchedule} from '../../../../packages/ui/src/EventSchedule';
 import {consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
@@ -45,19 +47,11 @@ export function EventPage({
   live?: LiveEvent;
 }) {
   const [policy, setPolicy] = useState<PageModule | null>(null);
-  const [message, setMessage] = useState("");
-  const [phone, setPhone] = useState("");
+
+
   const [notice, setNotice] = useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[complete,setComplete]=useState(false);
   const requestKey=useRef(crypto.randomUUID());
-  const formatPhone = (raw: string) => {
-    const s = raw.replace(/\D/g, "").slice(0, 11);
-    return s.length < 4
-      ? s
-      : s.length < 8
-        ? `${s.slice(0, 3)}-${s.slice(3)}`
-        : `${s.slice(0, 3)}-${s.slice(3, s.length - 4)}-${s.slice(-4)}`;
-  };
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if(!live){setNotice(true);return;}
@@ -98,80 +92,11 @@ export function EventPage({
                   <section className="event-section" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}>
                     <ModuleTitle module={module}/>
                     <ModuleBody module={module}/>
-                    {stage === "submission" && (
-                      <>
-                        <label className="field sentence-field">
-                          응모 문구
-                          <textarea
-                            required
-                            name="message"
-                            maxLength={event.maxLength}
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="당신의 한 문장을 남겨주세요."
-                          />
-                          <small className="count">
-                            {message.length} / {event.maxLength}자
-                          </small>
-                        </label>
-                        <label className="field">
-                          이름
-                          <input
-                            required
-                            name="name"
-                            autoComplete="name"
-                            placeholder="이름을 입력해주세요."
-                          />
-                        </label>
-                      </>
-                    )}
-                    {(module.fields??[]).map(field=><label className="field" key={field.id}>{field.label}{field.type==='textarea'?<textarea name={'extra:'+field.id} required={field.required} maxLength={field.maxLength}/>:field.type==='select'?<select name={'extra:'+field.id} required={field.required}><option value="">선택해주세요.</option>{field.options.map(option=><option key={option}>{option}</option>)}</select>:<input name={'extra:'+field.id} type={field.type==='number'?'number':'text'} required={field.required} maxLength={field.maxLength}/>}</label>)}
-                    <div className="contact-grid">
-                      <label className="field">
-                        연락처
-                        <input
-                          required
-                          inputMode="numeric"
-                          name="phone"
-                          autoComplete="tel-national"
-                          value={phone}
-                          onChange={(e) =>
-                            setPhone(formatPhone(e.target.value))
-                          }
-                          placeholder="010-0000-0000"
-                          pattern={String.raw`0[0-9\-]{8,12}`}
-                        />
-                      </label>
-                      <label className="field">
-                        이메일
-                        <input
-                          required
-                          type="email"
-                          name="email"
-                          autoComplete="email"
-                          placeholder="example@email.com"
-                        />
-                      </label>
-                    </div>
-                    {stage === "voting" && (
-                      <label className="field">
-                        인스타그램 계정
-                        <input
-                          required
-                          name="instagram"
-                          placeholder="아이디를 입력해주세요. (@ 제외)"
-                          pattern="@?[A-Za-z0-9_.]{1,30}"
-                        />
-                        <small>
-                          중복 투표 {event.allowRepeatVotes ? "허용" : "제한"} ·
-                          입력하신 정보는 공개되지 않습니다.
-                        </small>
-                      </label>
-                    )}
+                    <ParticipationFields items={formInputs(module,stage,event.maxLength)}/>
                   </section>
                 );
               case "consent": {
-                const items=live?[...live.policies].sort((a,b)=>{const order=consentItems(module,stage).map(i=>i.id);return order.indexOf(a.kind)-order.indexOf(b.kind);}).map(p=>({...p,...decodePolicy(p.body),label:decodePolicy(p.body).label??(p.kind==='privacy'?'개인정보 수집·이용에 동의합니다.':'응모작 활용에 동의합니다.')})):consentItems(module,stage).map(p=>({...p,required:1}));
+                const items=live?[...live.policies].sort((a,b)=>{const order=consentItems(module,stage).map(i=>i.id);return order.indexOf(a.kind)-order.indexOf(b.kind);}).map(p=>({...p,...decodePolicy(p.body),required:p.required,label:decodePolicy(p.body).label??(p.kind==='privacy'?'개인정보 수집·이용에 동의합니다.':'응모작 활용에 동의합니다.')})):consentItems(module,stage).map(p=>({...p,required:p.required!==false?1:0}));
                 return <section className="consent-section event-container" key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}><ModuleTitle module={module}/>{items.map(p=><div className="consent-row" key={p.id}><label><input type="checkbox" name="policy" value={p.id} required={!!p.required}/>{p.required?'[필수]':'[선택]'} {p.label}</label>{p.body.trim()&&<button type="button" onClick={()=>setPolicy({id:p.id,type:'text',title:p.label,body:p.body})}>자세히 보기</button>}</div>)}</section>;
               }
               case "schedule":

@@ -1,3 +1,5 @@
+import {InputFieldsEditor} from './InputFieldsEditor';
+import {formInputs} from '../../../../packages/event-builder/src/inputs';
 import {InfoCardsEditor} from './InfoCardsEditor';
 import {ScheduleEditor} from './ScheduleEditor';
 import {consentItems} from '../../../../packages/event-builder/src/consents';
@@ -594,29 +596,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                       <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
                       {selectedModule.type==='intro'&&<InfoCardsEditor items={selectedModule.cards??[{id:selectedModule.id+'-card',title:selectedModule.title,text:'',description:selectedModule.body}]} onChange={cards=>patchModule({cards,...(!selectedModule.cards?{title:'',body:''}:{})})}/>}
                       {selectedModule.type==='schedule'&&<ScheduleEditor items={selectedModule.schedule??[]} onChange={schedule=>patchModule({schedule})}/>}
-                      {selectedModule.type==='form'&&<fieldset><legend>추가 입력 항목</legend>{(selectedModule.fields??[]).map((field,index)=><div key={field.id}><label className="field">항목 이름<input value={field.label} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,label:e.target.value}:f)})}/></label><label className="field">입력 방식<select value={field.type} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,type:e.target.value as typeof f.type}:f)})}><option value="text">짧은 글</option><option value="textarea">긴 글</option><option value="number">숫자</option><option value="select">선택형</option></select></label><label><input type="checkbox" checked={field.required} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,required:e.target.checked}:f)})}/>필수 입력</label><label className="field">최대 글자 수<input type="number" min="1" max="2000" value={field.maxLength} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,maxLength:Number(e.target.value)}:f)})}/></label>{field.type==='select'&&<label className="field">선택지 (줄바꿈으로 구분)<textarea value={field.options.join('\n')} onChange={e=>patchModule({fields:selectedModule.fields!.map((f,i)=>i===index?{...f,options:e.target.value.split('\n')}:f)})}/></label>}<Button onClick={()=>patchModule({fields:selectedModule.fields!.filter((_,i)=>i!==index)})}>항목 삭제</Button></div>)}<Button disabled={(selectedModule.fields?.length??0)>=10} onClick={()=>patchModule({fields:[...(selectedModule.fields??[]),{id:crypto.randomUUID(),label:'추가 항목',type:'text',required:false,maxLength:200,options:[]}]})}>입력 항목 추가</Button></fieldset>}
-                      {selectedModule.type === "form" &&
-                        stage === "submission" && (
-                          <label className="field">
-                            문구 최대 글자 수
-                            <input
-                              type="number"
-                              min="1"
-                              max="500"
-                              value={draft.maxLength}
-                              onChange={(e) =>
-                                update((d) => ({
-                                  ...d,
-                                  maxLength: Math.max(
-                                    1,
-                                    Math.min(500, Number(e.target.value) || 1),
-                                  ),
-                                }))
-                              }
-                            />
-                          </label>
-                        )}
-
+                      {selectedModule.type==='form'&&<InputFieldsEditor items={formInputs(selectedModule,stage,draft.maxLength)} onChange={inputFields=>update(d=>({...d,maxLength:inputFields.find(f=>f.binding==='message')?.maxLength??d.maxLength,pages:{...d.pages,[stage]:d.pages[stage].map(m=>m.id===moduleId?{...m,inputFields}:m)}}))}/>}
                       {selectedModule.type === "form" && stage === "voting" && (
                         <label className="field">
                           중복 투표
@@ -639,7 +619,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                           </small>
                         </label>
                       )}
-                      {selectedModule.type==='consent'&&<fieldset><legend>동의 항목</legend>{consentItems(selectedModule,stage).map((item,index)=><div key={item.id}><div className="consent-item-actions"><span>항목 {index+1}</span>{([-1,1] as const).map(offset=><Button key={offset} kind="small" disabled={index+offset<0||index+offset>=consentItems(selectedModule,stage).length} onClick={()=>{const items=[...consentItems(selectedModule,stage)];[items[index],items[index+offset]]=[items[index+offset]!,items[index]!];patchModule({consents:items});}}>{offset===-1?'위로':'아래로'}</Button>)}</div><label className="field">체크박스 문구<input value={item.label} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,label:e.target.value}:x)})}/></label><label className="field">자세히 보기 원문 (선택)<textarea rows={8} value={item.body} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,body:e.target.value}:x)})}/></label>{!['privacy','work-license'].includes(item.id)&&<Button onClick={()=>patchModule({consents:consentItems(selectedModule,stage).filter(x=>x.id!==item.id)})}>항목 삭제</Button>}</div>)}<Button disabled={consentItems(selectedModule,stage).length>=12} onClick={()=>patchModule({consents:[...consentItems(selectedModule,stage),{id:'consent-'+crypto.randomUUID(),label:'추가 동의 항목',body:''}]})}>동의 항목 추가</Button><small>저장 후 페이지를 공개하면 적용됩니다. 기존 참여자의 동의 원문은 보존됩니다.</small></fieldset>}
+                      {selectedModule.type==='consent'&&<fieldset><legend>동의 항목</legend>{consentItems(selectedModule,stage).map((item,index)=><div key={item.id}><div className="consent-item-actions"><span>항목 {index+1}</span>{([-1,1] as const).map(offset=><Button key={offset} kind="small" disabled={index+offset<0||index+offset>=consentItems(selectedModule,stage).length} onClick={()=>{const items=[...consentItems(selectedModule,stage)];[items[index],items[index+offset]]=[items[index+offset]!,items[index]!];patchModule({consents:items});}}>{offset===-1?'위로':'아래로'}</Button>)}</div><label className="field">필수 여부<select value={item.required===false?'optional':'required'} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,required:e.target.value==='required'}:x)})}><option value="required">필수</option><option value="optional">선택</option></select></label><label className="field">체크박스 문구<input value={item.label} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,label:e.target.value}:x)})}/></label><label className="field">자세히 보기 원문 (선택)<textarea rows={8} value={item.body} onChange={e=>patchModule({consents:consentItems(selectedModule,stage).map((x,i)=>i===index?{...x,body:e.target.value}:x)})}/></label>{!['privacy','work-license'].includes(item.id)&&<Button onClick={()=>patchModule({consents:consentItems(selectedModule,stage).filter(x=>x.id!==item.id)})}>항목 삭제</Button>}</div>)}<Button disabled={consentItems(selectedModule,stage).length>=12} onClick={()=>patchModule({consents:[...consentItems(selectedModule,stage),{id:'consent-'+crypto.randomUUID(),label:'추가 동의 항목',body:''}]})}>동의 항목 추가</Button><small>저장 후 페이지를 공개하면 적용됩니다. 기존 참여자의 동의 원문은 보존됩니다.</small></fieldset>}
 
                     </div>
                   ) : (

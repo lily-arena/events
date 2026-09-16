@@ -1,0 +1,15 @@
+import {Button} from '../../../../packages/ui/src';
+import {inputTypes,inputLimit,inputTypeNames,type FormInput} from '../../../../packages/event-builder/src/inputs';
+export function InputFieldsEditor({items,onChange}:{items:FormInput[];onChange:(v:FormInput[])=>void}){
+ const patch=(index:number,change:Partial<FormInput>)=>onChange(items.map((f,i)=>i===index?{...f,...change}:f));
+ const move=(index:number,offset:number)=>{const next=[...items];[next[index],next[index+offset]]=[next[index+offset]!,next[index]!];onChange(next);};
+ return <div className="input-fields-editor">{items.map((field,index)=><fieldset key={field.id}><legend>{index+1}. {field.label}</legend><div className="row"><Button disabled={!index} onClick={()=>move(index,-1)}>위로</Button><Button disabled={index===items.length-1} onClick={()=>move(index,1)}>아래로</Button>{field.binding==='extra'&&<Button onClick={()=>onChange(items.filter(f=>f.id!==field.id))}>항목 삭제</Button>}</div>
+ <label className="field">입력 유형<select value={field.type} onChange={e=>patch(index,{type:e.target.value as FormInput['type'],options:e.target.value==='select'&&!field.options.length?['선택지 1']:field.options})}>{inputTypes(field.binding).map(type=><option key={type} value={type}>{inputTypeNames[type]}</option>)}</select></label>
+ <label className="field">레이블<input maxLength={100} value={field.label} onChange={e=>patch(index,{label:e.target.value})}/></label>
+ <label className="field">글자 제한<input type="number" min={1} max={inputLimit(field.binding)} value={field.maxLength} onChange={e=>patch(index,{maxLength:Number(e.target.value)})}/></label>
+ <label className="field">플레이스홀더<input maxLength={300} value={field.placeholder} onChange={e=>patch(index,{placeholder:e.target.value})}/></label>
+ <label className="field">도움말<textarea maxLength={1000} value={field.help} placeholder="입력하지 않으면 표시하지 않습니다." onChange={e=>patch(index,{help:e.target.value})}/></label>
+ {field.binding==='extra'&&<label className="field">필수 여부<select value={field.required?'required':'optional'} onChange={e=>patch(index,{required:e.target.value==='required'})}><option value="required">필수</option><option value="optional">선택</option></select></label>}
+ {field.type==='select'&&<label className="field">선택지<textarea value={field.options.join('\n')} onChange={e=>patch(index,{options:e.target.value.split('\n')})}/></label>}
+ </fieldset>)}<Button disabled={items.filter(f=>f.binding==='extra').length>=10} onClick={()=>onChange([...items,{id:crypto.randomUUID(),binding:'extra',type:'text',required:false,label:'추가 항목',maxLength:200,placeholder:'',help:'',options:[]}])}>입력 항목 추가</Button></div>;
+}

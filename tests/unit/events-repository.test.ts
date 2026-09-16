@@ -59,6 +59,17 @@ describe('Events persistence and scoped reset',()=>{
   draft.privacyPolicy='';event=await repo.save(event.id,event.revision,draft);
   await expect(repo.publish(event.id,event.revision)).rejects.toThrow('개인정보 처리방침');
  });
+ it('versions optional consent changes and updates the server required flag',async()=>{
+  const draft=structuredClone(firstSeat);const consent=draft.pages.submission.find(m=>m.type==='consent')!;
+  consent.consents=[{id:'privacy',label:'정보 동의',body:'',required:true},{id:'work-license',label:'활용 동의',body:'',required:false}];
+  let event=await repo.create(draft);event=await repo.publish(event.id,event.revision);
+  const old=(await repo.policies(event.id)).find(p=>p.stage_id==='submission'&&p.kind==='work-license')!;
+  expect(old.required).toBe(0);expect(JSON.parse(String(old.body)).required).toBe(false);
+  consent.consents[1]!.required=true;event=await repo.save(event.id,event.revision,draft);await repo.publish(event.id,event.revision);
+  const current=(await repo.policies(event.id)).find(p=>p.stage_id==='submission'&&p.kind==='work-license')!;
+  expect(current.required).toBe(1);expect(current.id).not.toBe(old.id);
+  expect(JSON.parse(String(memory.sqlite.prepare('SELECT body FROM event_policies WHERE event_id=? AND id=?').get(event.id,old.id)!.body)).required).toBe(false);
+ });
  it('requires an active operator',async()=>{
   memory.sqlite.exec("UPDATE platform_admins SET active=0");
   await expect(repo.create(firstSeat)).rejects.toThrow('로그인');

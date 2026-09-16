@@ -1,3 +1,4 @@
+import {formInputs,validateFormValues} from '../../../../packages/event-builder/src/inputs';
 import type {PublicEventsData} from '../../../data/src/events/index';
 import {verifyGatewayRequest} from '../../../../packages/security/src/gateway';
 import {verifyTurnstile} from '../../../../packages/security/src/turnstile';
@@ -27,8 +28,11 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
   const kind=stage.kind as 'submission'|'voting';
   const challenge=await verifyTurnstile({mode:local?'mock':'live',secret:env.TURNSTILE_SECRET,allowedHostnames:['events.seoularena.net'],environment:env.ENVIRONMENT},{token:input.turnstileToken??'',action:kind==='voting'?'vote':'submission',remoteIp:local?null:ip,idempotencyKey:input.requestKey,now:Date.now()});
   if(!challenge.ok)return json({error:'자동 입력 방지를 다시 확인해주세요.'},422);
+  const module=view.event.pages[kind].find((m:{type:string})=>m.type==='form');
+  const fields=module?formInputs(module,kind,view.event.maxLength):[];
+  validateFormValues(fields,{...input.participant,message:input.message,...Object.fromEntries(Object.entries(input.extra??{}).map(([id,value])=>['extra:'+id,value]))});
   const participant=validateParticipant(input.participant,kind==='voting'),participantId=crypto.randomUUID();
-  participant.extra=validateExtraFields(input.extra,view.event.pages[kind].find((m:{type:string})=>m.type==='form')?.fields??[]);
+  participant.extra=validateExtraFields(input.extra,fields.filter(f=>f.binding==='extra'));
   const envelope=await encryptParticipant(await importPublicKey(env.PII_PUBLIC_KEY),env.PII_KEY_VERSION,view.event.id,participantId,participant);
   if(!Array.isArray(input.policyIds)||input.policyIds.some((x:unknown)=>typeof x!=='string')||typeof input.message!=='string')return json({error:'입력 내용을 확인해주세요.'},422);
   const receipt=await env.DATA.participate({eventId:view.event.id,stageId:String(stage.id),round:Number(stage.round),revision:input.revision,participantId,kind,message:input.message,candidateId:input.candidateId??'',policyIds:input.policyIds,envelope,masked:maskedParticipant(participant),identities:kind==='voting'?await identityHashes(env.IDENTITY_HMAC_KEY,view.event.id,String(stage.id),Number(stage.round),participant):[],requestKey:input.requestKey,payloadHmac:await hmacSha256Hex(env.IDENTITY_HMAC_KEY,canonicalJson({participant,message:input.message,candidate:input.candidateId,policies:input.policyIds})),rateHmac:await hmacSha256Hex(env.IDENTITY_HMAC_KEY,JSON.stringify([view.event.id,ip])),identityKeyVersion:env.PII_KEY_VERSION});
