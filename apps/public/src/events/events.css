@@ -387,6 +387,6 @@
 /* Paint the viewport and overscroll area with the public page background. */
 html:has(.event-page:not(.embedded)),body:has(.event-page:not(.embedded)){background:#000;}
 .event-page:not(.embedded){padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));}
-.event-page .event-content > .event-hero{padding-block:32px;}
-@media(max-width:760px){.event-page:not(.embedded){padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));}.event-page .event-content > .event-hero{padding-block:24px;}}
-.preview-canvas.mobile .event-page .event-content > .event-hero{padding-block:24px;}
+.event-page .event-content > .event-hero{padding-block:64px;}
+@media(max-width:760px){.event-page:not(.embedded){padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));}.event-page .event-content > .event-hero{padding-block:48px;}}
+.preview-canvas.mobile .event-page .event-content > .event-hero{padding-block:48px;}
