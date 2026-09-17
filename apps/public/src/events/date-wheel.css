@@ -1,0 +1,18 @@
+.event-page .date-wheel-field{position:relative;}
+.event-page .date-wheel-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--field-border,#444);border-radius:4px;background:var(--paper);color:var(--ink);font:inherit;font-size:var(--event-input-font-size,17px);line-height:1.6;text-align:left;cursor:pointer;}
+.event-page .date-wheel-trigger[data-empty=true] span{color:var(--field-placeholder,#929292);}
+.event-page .date-wheel-trigger svg{flex:none;color:var(--ink);}
+.event-page .date-wheel-trigger:hover,.event-page .date-wheel-trigger:focus-visible{border-color:var(--ink);outline:none;}
+.event-page .date-wheel-trigger[aria-invalid=true]{border-color:var(--field-error,#ff6268);}
+:root body .event-page .field:has(.date-wheel-trigger[aria-invalid=true]){color:var(--field-error,#ff6268);}
+:root body .event-page input.date-wheel-validation{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;min-height:0;padding:0;border:0;inset:0;}
+.date-wheel-dialog{width:min(440px,calc(100vw - 32px));padding:24px;}
+.date-wheels{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin:24px 0;}
+.date-wheel{height:220px;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;padding-block:88px;box-sizing:border-box;mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent);}
+.date-wheel::-webkit-scrollbar{display:none;}
+.date-wheel-option{height:44px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:24px;line-height:1;color:#999;cursor:pointer;user-select:none;}
+.date-wheel-option[aria-selected=true]{color:#111;background:#efefef;border-radius:8px;font-weight:600;}
+.date-wheel:focus-visible{outline:2px solid #444;outline-offset:3px;border-radius:8px;}
+.date-wheel-actions{display:grid;grid-template-columns:1fr;}
+.date-wheel-actions .button{width:100%;}
+@media(max-width:600px){.date-wheel-dialog{padding:20px;}.date-wheel-option{font-size:22px;}}

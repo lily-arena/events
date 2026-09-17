@@ -19,6 +19,7 @@ export function Modal({
   description,
   children,
   className = "",
+  hideCloseButton = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -26,12 +27,13 @@ export function Modal({
   description?: string;
   children?: ReactNode;
   className?: string;
+  hideCloseButton?: boolean;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className={`dialog ${className}`}>
+        <Dialog.Content className={`dialog ${className}`} {...(!description ? {"aria-describedby": undefined} : {})}>
           <Dialog.Title>{title}</Dialog.Title>
           {description && (
             <Dialog.Description className="dialog-description">
@@ -39,11 +41,11 @@ export function Modal({
             </Dialog.Description>
           )}
           {children}
-          <div className="dialog-footer">
+          {!hideCloseButton && <div className="dialog-footer">
             <Dialog.Close asChild>
               <Button>닫기</Button>
             </Dialog.Close>
-          </div>
+          </div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

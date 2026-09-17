@@ -1,11 +1,11 @@
-import {validCalendarDate,koreaToday} from '../../domain/src/calendar-date';
+import {validCalendarDate,koreaToday,ageOnDate,minimumAgeMessage} from '../../domain/src/calendar-date';
 import type {PageModule,Stage} from './model';
 export type InputType='textarea'|'text'|'number'|'email'|'instagram'|'tel'|'select'|'date';
 export type InputBinding='message'|'name'|'phone'|'email'|'instagram'|'extra'|'birthDate';
-export interface FormInput {id:string;binding:InputBinding;type:InputType;label:string;placeholder:string;help:string;maxLength:number;required:boolean;options:string[]}
+export interface FormInput {id:string;binding:InputBinding;type:InputType;label:string;placeholder:string;help:string;maxLength:number;required:boolean;minAge?:number;options:string[]}
 export const inputTypeNames:Record<InputType,string>={textarea:'긴 텍스트',text:'텍스트',number:'숫자',email:'이메일',instagram:'인스타그램 ID',tel:'연락처',select:'선택 목록',date:'날짜 (년·월·일)'};
 export function inputTypes(binding:InputBinding):InputType[]{
- if(binding==='birthDate')return ['date'];
+ if(binding==='birthDate')return Object.keys(inputTypeNames) as InputType[];
  if(binding==='phone')return ['tel','text','number'];
  if(binding==='email')return ['email','text'];
  if(binding==='instagram')return ['instagram','text'];
@@ -28,6 +28,7 @@ export function inputPattern(field:FormInput){
 /** Called before encryption; rejects requests that bypass the editable form constraints. */
 export function validateFormValues(fields:FormInput[],values:Record<string,unknown>){
  for(const field of fields){const raw=values[inputName(field)]??'';if(typeof raw!=='string')throw new Error('입력 내용을 확인해주세요.');const value=raw.normalize('NFC').trim();const pattern=inputPattern(field);
+ if(value&&field.binding==='birthDate'&&field.minAge!==undefined&&validCalendarDate(value)&&ageOnDate(value)<field.minAge)throw new Error(minimumAgeMessage(field.minAge));
  if((value&&field.type==='date'&&(!validCalendarDate(value)||(field.binding==='birthDate'&&value>koreaToday())))||(field.required&&!value)||value.length>field.maxLength||(value&&pattern&&!new RegExp(`^(?:${pattern})$`).test(value))||(value&&field.type==='select'&&!field.options.includes(value)))throw new Error(`${field.label} 항목을 확인해주세요.`);
  }
 }

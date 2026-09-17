@@ -56,9 +56,12 @@ function inputFields(value:unknown):FormInput[]|undefined {
  if(!Array.isArray(value)||value.length>15)fail('입력 항목은 최대 15개입니다.');
  const items=(value as unknown[]).map(v=>{const i=object(v),binding=choice(i.binding,['message','name','phone','email','instagram','birthDate','extra'] as const),type=choice(i.type,inputTypes(binding));const id=text(i.id,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('입력 항목을 확인해주세요.');
  if(typeof i.required!=='boolean')fail('필수 여부를 확인해주세요.');
+ if(i.minAge!==undefined&&(binding!=='birthDate'||!Number.isInteger(i.minAge)||Number(i.minAge)<0||Number(i.minAge)>120))fail('최소 만 나이는 0~120세로 입력해주세요.');
+ if(i.minAge!==undefined&&i.required!==true)fail('최소 나이 제한을 사용하려면 생년월일을 필수로 설정해주세요.');
+ if(binding==='birthDate'&&type!=='date')fail('생년월일 입력 유형을 확인해주세요.');
  if(!Number.isInteger(i.maxLength)||Number(i.maxLength)<1||Number(i.maxLength)>inputLimit(binding))fail('입력 글자 제한을 확인해주세요.');
  const options=Array.isArray(i.options)&&i.options.length<=30?i.options.map(x=>text(x,100,true)):[];if(type==='select'&&!options.length)fail('선택지를 입력해주세요.');
- return {id,binding,type,required:i.required as boolean,maxLength:Number(i.maxLength),label:text(i.label,100,true),placeholder:text(i.placeholder,300),help:text(i.help,1000),options};});
+ return {id,binding,type,minAge:i.minAge===undefined?undefined:Number(i.minAge),required:i.required as boolean,maxLength:Number(i.maxLength),label:text(i.label,100,true),placeholder:text(i.placeholder,300),help:text(i.help,1000),options};});
  if(new Set(items.map(i=>i.id)).size!==items.length)fail('입력 항목이 중복되었습니다.');
  return items;
 }
