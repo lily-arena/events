@@ -369,11 +369,13 @@
 }
 
 /* One gap controls all sibling content modules; internal card padding stays separate. */
-.event-page{--module-gap:64px;}
+.event-page{--module-gap:40px;}
 .event-page .event-content{display:flex;flex-direction:column;gap:var(--module-gap);padding-top:var(--module-gap);padding-bottom:var(--module-gap);}
 .event-page .event-content > :is(.event-section,.event-hero,.consent-section){margin-block:0;padding-block:0;}
 .event-page .event-content > .event-container{padding:24px;}
 .event-page .event-content > .submission-action{margin-block:0;}
 .event-page .event-content > :is(.event-section,.event-hero,.consent-section) > :last-child{margin-bottom:0;}
-@media(max-width:760px){.event-page{--module-gap:40px;}.event-page .event-content > .event-container{padding:20px 16px;}}
-.preview-canvas.mobile .event-page{--module-gap:40px;}
+@media(max-width:760px){.event-page{--module-gap:24px;}.event-page .event-content > .event-container{padding:20px 16px;}}
+.preview-canvas.mobile .event-page{--module-gap:24px;}
+
+.event-page .event-content > :is(.event-section,.event-hero,.consent-section).event-container{margin-block:0;}
