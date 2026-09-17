@@ -379,3 +379,7 @@
 .preview-canvas.mobile .event-page{--module-gap:24px;}
 
 .event-page .event-content > :is(.event-section,.event-hero,.consent-section).event-container{margin-block:0;}
+
+.event-page .field-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.event-page .field-heading label{min-width:0;margin:0;}
+.event-page .field-heading .count{flex:none;margin:0;white-space:nowrap;}
