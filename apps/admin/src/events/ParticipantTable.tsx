@@ -6,7 +6,7 @@ interface Person {id:string;masked_json:string;message:string;created_at:number;
 interface Page {entries:Person[];page:number;pageSize:number;total:number;columns?:string[]}
 const date=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'short',timeStyle:'short'});
 export function ParticipantTable({base,onReveal,onDelete,busy,refreshKey}:{base:string;onReveal:(id:string)=>void;onDelete:(id:string)=>void;busy:boolean;refreshKey:string}){
- const names:Record<string,string>={name:'이름',phone:'연락처',email:'이메일',instagram:'인스타그램'};
+ const names:Record<string,string>={name:'이름',birthDate:'생년월일',phone:'연락처',email:'이메일',instagram:'인스타그램'};
  const [kind,setKind]=useState<'submission'|'voting'>('submission'),[drawCount,setDrawCount]=useState(1),[drawing,setDrawing]=useState(false),[winners,setWinners]=useState<Person[]>([]);
  const [data,setData]=useState<Page|null>(null),[page,setPage]=useState(1),[error,setError]=useState(''),[loading,setLoading]=useState(false);
  useEffect(()=>{if(refreshKey)return;let active=true;setLoading(true);api<Page>(base+'/participant-page?page='+page+'&kind='+kind).then(value=>{if(active)setData(value);}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[base,page,refreshKey,kind]);

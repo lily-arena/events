@@ -1,6 +1,6 @@
 import type {EventDraft} from '../../../../packages/event-builder/src/model';
 import {formInputs} from '../../../../packages/event-builder/src/inputs';
-const names:Record<string,string>={name:'이름',phone:'연락처',email:'이메일',instagram:'인스타그램'};
+const names:Record<string,string>={name:'이름',birthDate:'생년월일',phone:'연락처',email:'이메일',instagram:'인스타그램'};
 export function privateDetailRows(value:Record<string,unknown>,event:EventDraft){
  const rows=Object.entries(names).flatMap(([key,label])=>typeof value[key]==='string'&&value[key].trim()?[{key,label,value:value[key] as string}]:[]);
  if(value.extra&&typeof value.extra==='object'&&!Array.isArray(value.extra)){

@@ -1,8 +1,9 @@
+import {validCalendarDate,koreaToday} from '../../domain/src/calendar-date';
 import { checkContact } from '../../domain/src/contact';
 import { base64Encode, base64Decode, randomBytes } from './bytes';
 import { hmacSha256Hex } from './hash';
 import { maskName, maskPhone, maskEmail } from './masking';
-export interface Participant {name:string;phone:string;email:string;instagram:string;extra?:Record<string,string>}
+export interface Participant {name:string;phone:string;email:string;instagram:string;birthDate?:string;extra?:Record<string,string>}
 export function validateParticipant(value:unknown,voting:boolean,fields?:readonly {binding:string;required:boolean}[]):Participant {
  if(!value || typeof value!=='object')throw new Error('참여자 정보를 입력해주세요.');
  const input=value as Record<string,unknown>;
@@ -13,7 +14,9 @@ export function validateParticipant(value:unknown,voting:boolean,fields?:readonl
  const contact=checkContact({name:name||'참여자',phone:phone||'01000000000',email:email||'empty@example.invalid'});
  const instagram=voting?raw('instagram').normalize('NFKC').trim().replace(/^@/,'').toLowerCase():'';
  if(instagram&&!/^[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?$/.test(instagram))throw new Error('인스타그램 계정명을 확인해주세요.');
- return {name:name?contact.name:'',phone:phone?contact.phone:'',email:email?contact.email:'',instagram};
+ const birthDate=fields?.some(f=>f.binding==='birthDate')?raw('birthDate'):'';
+ if(birthDate&&(!validCalendarDate(birthDate)||birthDate>koreaToday()))throw new Error('생년월일을 확인해주세요.');
+ return {...(birthDate?{birthDate}:{}),name:name?contact.name:'',phone:phone?contact.phone:'',email:email?contact.email:'',instagram};
 }
 export async function identityHashes(secret:string,eventId:string,stageId:string,round:number,participant:Participant) {
  const normalized={phone:participant.phone,email:participant.email.toLowerCase(),instagram:participant.instagram};
@@ -39,14 +42,14 @@ export async function decryptParticipant(privateKey:CryptoKey,eventId:string,par
   return JSON.parse(new TextDecoder().decode(plain)) as Participant;
  }finally{new Uint8Array(raw).fill(0);}
 }
-export function maskedParticipant(p:Participant){return {name:p.name?maskName(p.name):'',phone:p.phone?maskPhone(p.phone):'',email:p.email?maskEmail(p.email):'',instagram:p.instagram?`${p.instagram[0]}${'*'.repeat(p.instagram.length-1)}`:''};}
+export function maskedParticipant(p:Participant){return {...(p.birthDate?{birthDate:p.birthDate.slice(0,4)+'-**-**'}:{}),name:p.name?maskName(p.name):'',phone:p.phone?maskPhone(p.phone):'',email:p.email?maskEmail(p.email):'',instagram:p.instagram?`${p.instagram[0]}${'*'.repeat(p.instagram.length-1)}`:''};}
 
 export function validateExtraFields(value:unknown,fields:readonly {id:string;label:string;type:string;required:boolean;maxLength:number;options:string[]}[]):Record<string,string> {
  const input=value&&typeof value==='object'?value as Record<string,unknown>:{};
  return Object.fromEntries(fields.map(field=>{
   const raw=input[field.id]??'';if(typeof raw!=='string')throw new Error('추가 입력 내용을 확인해주세요.');
   const text=raw.normalize('NFC').trim();
-  if((field.required&&!text)||text.length>field.maxLength||(text&&field.type==='number'&&!Number.isFinite(Number(text)))||(text&&field.type==='select'&&!field.options.includes(text)))throw new Error(`${field.label} 항목을 확인해주세요.`);
+  if((text&&field.type==='date'&&!validCalendarDate(text))||(field.required&&!text)||text.length>field.maxLength||(text&&field.type==='number'&&!Number.isFinite(Number(text)))||(text&&field.type==='select'&&!field.options.includes(text)))throw new Error(`${field.label} 항목을 확인해주세요.`);
   return [field.id,text];
  }));
 }

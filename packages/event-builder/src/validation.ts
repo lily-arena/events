@@ -54,7 +54,7 @@ function cards(value:unknown):import('./model').InfoCard[]|undefined {
 function inputFields(value:unknown):FormInput[]|undefined {
  if(value===undefined)return undefined;
  if(!Array.isArray(value)||value.length>15)fail('입력 항목은 최대 15개입니다.');
- const items=(value as unknown[]).map(v=>{const i=object(v),binding=choice(i.binding,['message','name','phone','email','instagram','extra'] as const),type=choice(i.type,inputTypes(binding));const id=text(i.id,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('입력 항목을 확인해주세요.');
+ const items=(value as unknown[]).map(v=>{const i=object(v),binding=choice(i.binding,['message','name','phone','email','instagram','birthDate','extra'] as const),type=choice(i.type,inputTypes(binding));const id=text(i.id,100,true);if(!/^[a-zA-Z0-9_-]+$/.test(id))fail('입력 항목을 확인해주세요.');
  if(typeof i.required!=='boolean')fail('필수 여부를 확인해주세요.');
  if(!Number.isInteger(i.maxLength)||Number(i.maxLength)<1||Number(i.maxLength)>inputLimit(binding))fail('입력 글자 제한을 확인해주세요.');
  const options=Array.isArray(i.options)&&i.options.length<=30?i.options.map(x=>text(x,100,true)):[];if(type==='select'&&!options.length)fail('선택지를 입력해주세요.');
@@ -97,7 +97,8 @@ export function validateDraft(value: unknown, id: string): EventDraft {
       if (validated.filter(m => m.type === functional).length > 1) fail('참여 기능은 페이지마다 하나씩만 넣을 수 있습니다.');
     }
     for(const form of validated.filter(m=>m.type==='form'&&m.inputFields)){
-      const bindings=form.inputFields!.filter(f=>f.binding!=='extra').map(f=>f.binding).sort();
+      const bindings=form.inputFields!.filter(f=>f.binding!=='extra'&&f.binding!=='birthDate').map(f=>f.binding).sort();
+      if(form.inputFields!.filter(f=>f.binding==='birthDate').length>1)fail('생년월일은 한 번만 추가할 수 있습니다.');
       const expected=stage==='submission'?['email','message','name','phone']:stage==='voting'?['email','instagram','phone']:[];
       if(JSON.stringify(bindings)!==JSON.stringify(expected))fail('기본 입력 항목을 확인해주세요.');
     }

@@ -129,11 +129,12 @@ export class EventsRepository {
   const entries=(await this.statement("SELECT p.id,p.masked_json,p.entry_id,p.vote_id,coalesce(e.message,c.message,'') AS message,coalesce(e.created_at,v.created_at) AS created_at,coalesce(e.status,'vote') AS status FROM event_participants p LEFT JOIN event_entries e ON e.event_id=p.event_id AND e.id=p.entry_id LEFT JOIN event_votes v ON v.event_id=p.event_id AND v.id=p.vote_id LEFT JOIN event_candidates c ON c.event_id=v.event_id AND c.stage_id=v.stage_id AND c.round=v.round AND c.id=v.candidate_id WHERE p.event_id=?"+rowFilter+" ORDER BY coalesce(e.created_at,v.created_at) DESC,p.id LIMIT ? OFFSET ?",id,pageSize,(current-1)*pageSize).all()).results;
   const collected=await this.statement(`SELECT
    max(CASE WHEN entry_id IS NOT NULL AND coalesce(json_extract(masked_json,'$.name'),'')<>'' THEN 1 ELSE 0 END) AS name,
+   max(CASE WHEN coalesce(json_extract(masked_json,'$.birthDate'),'')<>'' THEN 1 ELSE 0 END) AS birthDate,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.phone'),'')<>'' THEN 1 ELSE 0 END) AS phone,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.email'),'')<>'' THEN 1 ELSE 0 END) AS email,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.instagram'),'')<>'' THEN 1 ELSE 0 END) AS instagram
    FROM event_participants WHERE event_id=?${filter}`,id).first<Record<string,number>>();
-  const columns=['name','phone','email','instagram'].filter(key=>collected?.[key]);
+  const columns=['name','birthDate','phone','email','instagram'].filter(key=>collected?.[key]);
   return {entries,total,page:current,pageSize,columns};
  }
  async auditLog(id:string) {await this.get(id);return (await this.statement('SELECT action,target_id,metadata_json,created_at FROM event_audit WHERE event_id=? ORDER BY created_at DESC LIMIT 200',id).all()).results;}
