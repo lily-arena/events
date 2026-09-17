@@ -11,7 +11,8 @@ export async function handlePage(request:Request,env:GatewayEnv,shellHtml:string
  let title='서울아레나 이벤트 백오피스',description='서울아레나 이벤트 관리';
  try{
   if(!admin){const view=await handleGateway(new Request(new URL('/api/events'+url.pathname,env.PUBLIC_ORIGIN)),env);if(!view.ok)return new Response('공개된 이벤트를 찾을 수 없습니다.',{status:view.status===404?404:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});const {event}=await view.json() as {event:{title:string;browserTitle?:string;description?:string}};title=event.browserTitle?.trim()||`서울아레나 ${event.title}`;description=event.description??'';}
-  const html=pageMetadata(shellHtml,title,description,new URL(url.pathname,env.PUBLIC_ORIGIN).href);
+  const shell=admin?shellHtml:shellHtml.replace('<html','<html data-event-surface="dark"').replace('</head>','<meta name="theme-color" content="#000000"/><style>html[data-event-surface="dark"],html[data-event-surface="dark"] body{background:#000;}</style></head>');
+  const html=pageMetadata(shell,title,description,new URL(url.pathname,env.PUBLIC_ORIGIN).href);
   return new Response(request.method==='HEAD'?null:html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
  }catch{return new Response('페이지를 불러오지 못했습니다.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});}
 }
