@@ -120,16 +120,19 @@ export class EventsRepository {
   await this.get(id);await this.audit(id,success?'privacy.revealed':'privacy.reveal_failed',{participantId}).run();
  }
  async participants(id:string) {await this.get(id);return (await this.statement('SELECT id,entry_id,vote_id,masked_json,retention_until FROM event_participants WHERE event_id=? ORDER BY retention_until DESC LIMIT 200',id).all()).results;}
- async participantPage(id:string,page:number){
-  await this.get(id);if(!Number.isSafeInteger(page)||page<1)throw new Error('페이지를 확인해주세요.');
-  const count=await this.statement('SELECT count(*) AS total FROM event_participants WHERE event_id=?',id).first<{total:number}>(),total=count?.total??0,pageSize=50,current=Math.min(page,Math.max(1,Math.ceil(total/pageSize)));
-  const entries=(await this.statement("SELECT p.id,p.masked_json,p.entry_id,p.vote_id,coalesce(e.message,c.message,'') AS message,coalesce(e.created_at,v.created_at) AS created_at,coalesce(e.status,'vote') AS status FROM event_participants p LEFT JOIN event_entries e ON e.event_id=p.event_id AND e.id=p.entry_id LEFT JOIN event_votes v ON v.event_id=p.event_id AND v.id=p.vote_id LEFT JOIN event_candidates c ON c.event_id=v.event_id AND c.stage_id=v.stage_id AND c.round=v.round AND c.id=v.candidate_id WHERE p.event_id=? ORDER BY coalesce(e.created_at,v.created_at) DESC,p.id LIMIT ? OFFSET ?",id,pageSize,(current-1)*pageSize).all()).results;
+ async participantPage(id:string,page:number,kind='all'){
+  await this.get(id);
+  if(!['all','submission','voting'].includes(kind))throw new Error('참여 구분을 확인해주세요.');
+  const filter=kind==='submission'?' AND entry_id IS NOT NULL':kind==='voting'?' AND vote_id IS NOT NULL':'';
+  const rowFilter=filter.replace('entry_id','p.entry_id').replace('vote_id','p.vote_id');if(!Number.isSafeInteger(page)||page<1)throw new Error('페이지를 확인해주세요.');
+  const count=await this.statement('SELECT count(*) AS total FROM event_participants WHERE event_id=?'+filter,id).first<{total:number}>(),total=count?.total??0,pageSize=50,current=Math.min(page,Math.max(1,Math.ceil(total/pageSize)));
+  const entries=(await this.statement("SELECT p.id,p.masked_json,p.entry_id,p.vote_id,coalesce(e.message,c.message,'') AS message,coalesce(e.created_at,v.created_at) AS created_at,coalesce(e.status,'vote') AS status FROM event_participants p LEFT JOIN event_entries e ON e.event_id=p.event_id AND e.id=p.entry_id LEFT JOIN event_votes v ON v.event_id=p.event_id AND v.id=p.vote_id LEFT JOIN event_candidates c ON c.event_id=v.event_id AND c.stage_id=v.stage_id AND c.round=v.round AND c.id=v.candidate_id WHERE p.event_id=?"+rowFilter+" ORDER BY coalesce(e.created_at,v.created_at) DESC,p.id LIMIT ? OFFSET ?",id,pageSize,(current-1)*pageSize).all()).results;
   const collected=await this.statement(`SELECT
    max(CASE WHEN entry_id IS NOT NULL AND coalesce(json_extract(masked_json,'$.name'),'')<>'' THEN 1 ELSE 0 END) AS name,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.phone'),'')<>'' THEN 1 ELSE 0 END) AS phone,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.email'),'')<>'' THEN 1 ELSE 0 END) AS email,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.instagram'),'')<>'' THEN 1 ELSE 0 END) AS instagram
-   FROM event_participants WHERE event_id=?`,id).first<Record<string,number>>();
+   FROM event_participants WHERE event_id=?${filter}`,id).first<Record<string,number>>();
   const columns=['name','phone','email','instagram'].filter(key=>collected?.[key]);
   return {entries,total,page:current,pageSize,columns};
  }
@@ -169,8 +172,21 @@ export class EventsRepository {
   const where="event_id=? AND (?='all' OR status=?) AND instr(lower(message),lower(?))>0";
   const total=await this.statement('SELECT count(*) AS total FROM event_entries WHERE '+where,id,status,status,query.trim()).first<{total:number}>();
   const count=total?.total??0,pageSize=50,current=Math.min(page,Math.max(1,Math.ceil(count/pageSize)));
-  const entries=(await this.statement('SELECT id,message,created_at,status,revision,EXISTS(SELECT 1 FROM event_candidates c WHERE c.event_id=event_entries.event_id AND c.entry_id=event_entries.id AND c.confirmed=1) AS locked FROM event_entries WHERE '+where+' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',id,status,status,query.trim(),pageSize,(current-1)*pageSize).all()).results;
+  const entries=(await this.statement('SELECT id,message,created_at,status,revision,review_comment,comment_revision,EXISTS(SELECT 1 FROM event_candidates c WHERE c.event_id=event_entries.event_id AND c.entry_id=event_entries.id AND c.confirmed=1) AS locked FROM event_entries WHERE '+where+' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',id,status,status,query.trim(),pageSize,(current-1)*pageSize).all()).results;
   return {entries,total:count,page:current,pageSize};
+ }
+ async comment(id:string,entryId:string,comment:string,revision:number){
+  await this.get(id);if(typeof comment!=='string'||comment.length>300||!Number.isSafeInteger(revision)||revision<0)throw new Error('코멘트는 300자 이내로 입력해주세요.');
+  const result=await this.statement('UPDATE event_entries SET review_comment=?,comment_revision=comment_revision+1 WHERE event_id=? AND id=? AND comment_revision=?',comment,id,entryId,revision).run();
+  if(!result.meta.changes)throw new Error('다른 운영자가 코멘트를 변경했습니다. 새로 불러온 뒤 확인해주세요.');
+  return {review_comment:comment,comment_revision:revision+1};
+ }
+ async drawParticipants(id:string,kind:string,count:number){
+  await this.get(id);if(!['submission','voting'].includes(kind)||!Number.isSafeInteger(count)||count<1||count>100)throw new Error('추첨 인원은 1~100명으로 입력해주세요.');
+  const rows=(await this.statement('SELECT id,masked_json,entry_id,vote_id FROM event_participants WHERE event_id=? AND '+(kind==='voting'?'vote_id':'entry_id')+' IS NOT NULL ORDER BY id',id).all()).results;
+  if(count>rows.length)throw new Error('추첨 인원이 대상 인원보다 많습니다.');
+  for(let i=0;i<count;i++){const n=rows.length-i,limit=4294967296-4294967296%n;let r:number;do{r=crypto.getRandomValues(new Uint32Array(1))[0]!;}while(r>=limit);const j=i+r%n;[rows[i],rows[j]]=[rows[j]!,rows[i]!];}
+  return {entries:rows.slice(0,count),total:rows.length};
  }
  async policies(id: string) {
   await this.get(id);
@@ -190,7 +206,7 @@ export class EventsRepository {
   ]);
   return this.get(id);
  }
- /** Snapshot displayed consent labels/details and the footer policy in immutable versions. */
+ /** Snapshot displayed consent labels/details in immutable versions. */
  private async policyStatements(id:string,draft:EventDraft,stages:Stage[]) {
   const writes:D1PreparedStatement[]=[];
   for(const stage of stages){
@@ -202,7 +218,7 @@ export class EventsRepository {
     // Older drafts kept policy copy separately. Preserve that copy until explicitly edited.
     const resolved=!module.consents&&old?{...item,...decodePolicy(old.body)}:item;
     const required=item.required!==false;
-    const body=encodePolicy({...resolved,required},item.id==='privacy'?draft.privacyPolicy:undefined);
+    const body=encodePolicy({...resolved,required});
     if(old?.body===body)continue;
     const policyId=crypto.randomUUID(),digest=await sha256Hex(body);
     writes.push(this.statement('INSERT INTO event_policies(event_id,id,kind,version,body,digest,created_at) SELECT ?,?,?,coalesce(max(version),0)+1,?,?,? FROM event_policies WHERE event_id=? AND kind=?',id,policyId,item.id,body,digest,Date.now(),id,item.id),this.statement('INSERT INTO stage_policies VALUES(?,?,?,?,?) ON CONFLICT(event_id,stage_id,kind) DO UPDATE SET policy_id=excluded.policy_id,required=excluded.required',id,stage,item.id,policyId,Number(required)),this.audit(id,'policy.version_created',{stageId:stage,kind:item.id,policyId}));
@@ -313,13 +329,13 @@ export class EventsRepository {
   const published=event.published_json?JSON.parse(event.published_json) as EventDraft:null;
   const consent=published?.pages[stage.kind].find(m=>m.type==='consent');
   const items=consent?consentItems(consent,stage.kind):[];
-  const privacyReady=!!published?.privacyPolicy?.trim()&&items.some(i=>i.id==='privacy');
+  const privacyReady=items.some(i=>i.id==='privacy');
   const licenseReady=items.some(i=>i.id==='work-license');
   if(stage.kind!=='result'&&!privacyReady)blockers.push('개인정보 동의문을 저장해주세요.');
   if(stage.kind==='submission'&&!licenseReady)blockers.push('응모작 활용 동의문을 저장해주세요.');
   const checks=[{id:'published',label:'페이지 공개',complete:!!event.published_json&&event.visibility==='published'},
-   {id:'page',label:'페이지 구성·푸터 설정',complete:!!event.published_json&&!blockers.some(b=>!['페이지를 먼저 공개해주세요.','후보를 먼저 확정해주세요.','결과 문구를 먼저 선택해주세요.','개인정보 동의문을 저장해주세요.','응모작 활용 동의문을 저장해주세요.'].includes(b))}];
-  if(stage.kind!=='result')checks.push({id:'privacy',label:'개인정보 처리방침 · 푸터',complete:privacyReady});
+   {id:'page',label:'페이지 구성',complete:!!event.published_json&&!blockers.some(b=>!['페이지를 먼저 공개해주세요.','후보를 먼저 확정해주세요.','결과 문구를 먼저 선택해주세요.','개인정보 동의문을 저장해주세요.','응모작 활용 동의문을 저장해주세요.'].includes(b))}];
+  if(stage.kind!=='result')checks.push({id:'privacy',label:'개인정보 동의 항목',complete:privacyReady});
   if(stage.kind==='submission')checks.push({id:'license',label:'응모작 활용 동의문',complete:licenseReady});
   if(stage.kind==='voting')checks.push({id:'candidates',label:'투표 후보 확정',complete:candidates.length>0&&candidates.every(c=>!!c.confirmed)});
   if(stage.kind==='result')checks.push({id:'result',label:'최종 문구 선정',complete:!!result});

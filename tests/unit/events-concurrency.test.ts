@@ -21,7 +21,7 @@ it('saves and publishes exactly the submitted snapshot in one revision',async()=
 });
 it('keeps both old draft and public page when atomic publication validation fails',async()=>{
  const row=await create(),published=await a.publish(row.id,row.revision);
- await expect(a.save(row.id,published.revision,{...JSON.parse(published.draft_json),title:'Do not save',privacyPolicy:''},true)).rejects.toThrow();
+ await expect(a.save(row.id,published.revision,{...JSON.parse(published.draft_json),title:'Do not save',pages:{...JSON.parse(published.draft_json).pages,submission:[]}},true)).rejects.toThrow();
  expect(await a.get(row.id)).toEqual(published);
 });
 it('rolls back all content when a dependent policy write fails',async()=>{

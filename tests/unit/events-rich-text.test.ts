@@ -1,0 +1,6 @@
+import {it,expect} from 'vitest';
+import {applyMark,rebaseMarks} from '../../packages/event-builder/src/rich-text';
+import {validateDraft} from '../../packages/event-builder/src/validation';
+import {firstSeat} from '../../packages/event-builder/src/model';
+it('combines styles on overlapping ranges and clears only selected formatting',()=>{const marks=applyMark([{start:0,end:6,bold:true}],2,4,{size:'small'});expect(marks).toEqual([{start:0,end:2,bold:true},{start:2,end:4,bold:true,size:'small'},{start:4,end:6,bold:true}]);expect(applyMark(marks,2,4,{})).toEqual([{start:0,end:2,bold:true},{start:4,end:6,bold:true}]);expect(rebaseMarks('abcdef','Xabcdef',[{start:2,end:4,bold:true}])).toEqual([{start:3,end:5,bold:true}]);});
+it('persists body formatting and rejects ranges outside the text',()=>{const draft=structuredClone(firstSeat);const m=draft.pages.submission[0]!;m.body='본문 내용';m.bodySize='small';m.bodyMarks=[{start:0,end:2,bold:true,size:'large'}];expect(validateDraft(draft,'test').pages.submission[0]).toMatchObject({bodySize:'small',bodyMarks:m.bodyMarks});m.bodyMarks[0]!.end=99;expect(()=>validateDraft(draft,'test')).toThrow();});

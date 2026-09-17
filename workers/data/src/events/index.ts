@@ -37,13 +37,15 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async asset(identity:Identity,id:string,assetId:string){return (await this.repository(identity)).asset(id,assetId);}
  async entries(identity:Identity,id:string) {return (await this.repository(identity)).entries(id);}
  async reviewEntries(identity:Identity,id:string,status:string,query:string,page:number){return (await this.repository(identity)).reviewEntries(id,status,query,page);}
+ async comment(identity:Identity,id:string,entryId:string,comment:string,revision:number){return (await this.repository(identity)).comment(id,entryId,comment,revision);}
+ async drawParticipants(identity:Identity,id:string,kind:string,count:number){return (await this.repository(identity)).drawParticipants(id,kind,count);}
  async policies(identity:Identity,id:string) {return (await this.repository(identity)).policies(id);}
  async savePolicy(identity:Identity,id:string,stage:string,kind:string,body:string,revision:number) {return (await this.repository(identity)).savePolicy(id,stage,kind,body,revision);}
  async publish(identity:Identity,id:string,revision:number) {return (await this.repository(identity)).publish(id,revision);}
  async candidates(identity:Identity,id:string,stage:string) {return (await this.repository(identity)).candidates(id,stage);}
  async review(identity:Identity,id:string,entry:string,status:string,revision:number) {return (await this.repository(identity)).review(id,entry,status,revision);}
  async reorderCandidates(identity:Identity,id:string,stage:string,ids:string[],activity:number){return (await this.repository(identity)).reorderCandidates(id,stage,ids,activity);}
- async participantPage(identity:Identity,id:string,page:number){return (await this.repository(identity)).participantPage(id,page);}
+ async participantPage(identity:Identity,id:string,page:number,kind='all'){return (await this.repository(identity)).participantPage(id,page,kind);}
  async confirmCandidates(identity:Identity,id:string,stage:string,activity:number) {return (await this.repository(identity)).confirmCandidates(id,stage,activity);}
  async selectResult(identity:Identity,id:string,stage:string,voting:string,candidate:string,revision:number) {return (await this.repository(identity)).selectResult(id,stage,voting,candidate,revision);}
  async transitionPreview(identity:Identity,id:string,stage:string) {return (await this.repository(identity)).transitionPreview(id,stage);}

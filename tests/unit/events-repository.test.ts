@@ -19,7 +19,7 @@ describe('Events persistence and scoped reset',()=>{
  });
  it('runs publication, review, candidate confirmation and result transition without another approver',async()=>{
   let a=await repo.create(firstSeat);
-  a=await repo.publish(a.id,a.revision); // Footer policy is sufficient; details are optional.
+  a=await repo.publish(a.id,a.revision); // Consent details are optional.
   a=await repo.savePolicy(a.id,'submission','privacy','개인정보 동의 원문',a.revision);
   a=await repo.savePolicy(a.id,'submission','work-license','응모작 활용 원문',a.revision);
   a=await repo.savePolicy(a.id,'voting','privacy','투표 개인정보 동의 원문',a.revision);
@@ -38,13 +38,13 @@ describe('Events persistence and scoped reset',()=>{
   a=await repo.transition(a.id,'result',preview.revision,preview.activityRevision,false);
   expect(a.current_stage_id).toBe('result');
  });
- it('snapshots footer copy with optional details and preserves versions across reorder and transition',async()=>{
+ it('snapshots consent items independently of removed footer settings',async()=>{
   const draft=structuredClone(firstSeat);
   draft.pages.submission.find(m=>m.type==='consent')!.consents=[{id:'privacy',label:'개인정보 동의',body:''},{id:'work-license',label:'응모작 활용 동의',body:''},{id:'extra',label:'추가 확인',body:''}];
   let event=await repo.create(draft);event=await repo.publish(event.id,event.revision);
   const before=await repo.policies(event.id);
   const policy=before.find(p=>p.stage_id==='submission'&&p.kind==='privacy')!;
-  expect(JSON.parse(String(policy.body))).toMatchObject({body:'',privacyPolicy:draft.privacyPolicy,label:'개인정보 동의'});
+  expect(JSON.parse(String(policy.body))).toMatchObject({body:'',label:'개인정보 동의'});
   const ready=await repo.transitionPreview(event.id,'submission');expect(ready.canTransition).toBe(true);
   expect((await repo.transitionPreview(event.id,'voting')).blockers).toContain('후보를 먼저 확정해주세요.');
   event=await repo.transition(event.id,'submission',ready.revision,ready.activityRevision,true);
@@ -54,10 +54,10 @@ describe('Events persistence and scoped reset',()=>{
   expect((await repo.policies(event.id)).map(p=>p.id)).toEqual(before.map(p=>p.id));
   draft.privacyPolicy='수정된 푸터 원문';event=await repo.save(event.id,event.revision,draft);event=await repo.publish(event.id,event.revision);
   const after=await repo.policies(event.id);
-  expect(after.find(p=>p.stage_id==='submission'&&p.kind==='privacy')!.id).not.toBe(policy.id);
+  expect(after.find(p=>p.stage_id==='submission'&&p.kind==='privacy')!.id).toBe(policy.id);
   expect(memory.sqlite.prepare('SELECT body FROM event_policies WHERE event_id=? AND id=?').get(event.id,policy.id)!.body).toBe(policy.body);
   draft.privacyPolicy='';event=await repo.save(event.id,event.revision,draft);
-  await expect(repo.publish(event.id,event.revision)).rejects.toThrow('개인정보 처리방침');
+  await expect(repo.publish(event.id,event.revision)).resolves.toMatchObject({visibility:'published'});
  });
  it('versions optional consent changes and updates the server required flag',async()=>{
   const draft=structuredClone(firstSeat);const consent=draft.pages.submission.find(m=>m.type==='consent')!;

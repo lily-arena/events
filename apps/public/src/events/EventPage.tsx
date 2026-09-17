@@ -1,3 +1,4 @@
+import {RichText} from '../../../../packages/ui/src/RichText';
 import {BulletText} from "../../../../packages/ui/src/BulletText";
 import {eventBrowserTitle} from "../../../../packages/event-builder/src/model";
 import {useVoteCheck,duplicateVoteMessage} from './useVoteCheck';
@@ -27,7 +28,7 @@ function ModuleTitle({module}:{module:PageModule}) {
  const className=`module-title text-size-${size} text-tone-${module.titleTone??(module.type==="text"?"default":"emphasis")}`;
  return size==="body"?<p className={className}>{module.title}</p>:<h2 className={className}>{module.title}</h2>;
 }
-function ModuleBody({module}:{module:PageModule}) {return module.body?<p className={`module-body text-tone-${module.bodyTone??"default"}`}>{module.body}</p>:null;}
+function ModuleBody({module}:{module:PageModule}) {return module.body?<p className={`module-body text-tone-${module.bodyTone??"default"}`}><RichText text={module.body} marks={module.bodyMarks} size={module.bodySize??'body'}/></p>:null;}
 export interface LiveEvent {
  policies:{id:string;kind:string;body:string;required:number}[];
  candidates:{id:string;message:string}[];
@@ -123,7 +124,7 @@ export function EventPage({
                     key={module.id} data-edit-selected={embedded&&selectedModuleId===module.id?true:undefined} onClick={embedded?()=>onSelectModule?.(module.id):undefined}
                   >
                     <ModuleTitle module={module}/>
-                    <BulletText text={module.body} allLines/>
+                    <BulletText text={module.body} allLines marks={module.bodyMarks} size={module.bodySize??'small'}/>
                   </section>
                 );
               case "candidates":
@@ -182,34 +183,7 @@ export function EventPage({
           )}
         </div>
       </form>
-      <footer className="public-footer">
-        <button
-          type="button"
-          onClick={() =>
-            setPolicy({
-              id: "privacy",
-              type: "text",
-              title: "개인정보 처리방침",
-              body: live ? event.privacyPolicy??"" : "검토용 화면입니다. 개인정보 처리방침의 확정 원문은 공개 전에 연결됩니다.",
-            })
-          }
-        >
-          개인정보 처리방침
-        </button>
-        {live&&event.contactUrl?<a href={event.contactUrl}>문의</a>:<button
-          type="button"
-          onClick={() =>
-            setPolicy({
-              id: "contact",
-              type: "text",
-              title: "문의",
-              body: "검토용 화면입니다. 문의 채널은 공개 전에 연결됩니다.",
-            })
-          }
-        >
-          문의
-        </button>}
-      </footer>
+
       <Modal
         className="event-theme-dark event-dialog"
         open={policy !== null}

@@ -1,0 +1,4 @@
+import React from 'react';
+import type {BodySize,TextMark} from '../../event-builder/src/rich-text';
+import './rich-text.css';
+export function RichText({text,marks=[],size}:{text:string;marks?:TextMark[];size?:BodySize}){const points=[...new Set([0,text.length,...marks.flatMap(m=>[Math.max(0,Math.min(text.length,m.start)),Math.max(0,Math.min(text.length,m.end))])])].sort((a,b)=>a-b);return <span className={size?`rich-size-${size}`:undefined}>{points.slice(0,-1).map((start,i)=>{const end=points[i+1]!,m=marks.find(m=>m.start<=start&&m.end>=end);return <span key={start} className={[m?.size?`rich-size-${m.size}`:'',m?.tone?`rich-tone-${m.tone}`:''].join(' ')} style={{fontWeight:m?.bold?700:undefined,fontStyle:m?.italic?'italic':undefined,textDecoration:m?.underline?'underline':undefined}}>{text.slice(start,end)}</span>;})}</span>;}

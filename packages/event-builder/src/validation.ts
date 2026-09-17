@@ -1,3 +1,4 @@
+import type {TextMark} from './rich-text';
 import {inputTypes,inputLimit,type FormInput} from './inputs';
 import {consentItems} from './consents';
 import { moduleNames, validSlug, type EventDraft, type PageModule, type InputField, type Stage } from './model';
@@ -13,6 +14,7 @@ function choice<T extends string>(value: unknown, allowed: readonly T[], fallbac
   if (value === undefined && fallback !== undefined) return fallback;
   return typeof value === 'string' && allowed.includes(value as T) ? value as T : fail('선택할 수 없는 설정입니다.');
 }
+function marks(value:unknown,body:unknown):TextMark[]|undefined {if(value===undefined)return undefined;if(!Array.isArray(value)||value.length>200||typeof body!=='string')return fail('본문 서식을 확인해주세요.');return value.map(v=>{const m=object(v);if(!Number.isSafeInteger(m.start)||!Number.isSafeInteger(m.end)||Number(m.start)<0||Number(m.end)<=Number(m.start)||Number(m.end)>body.length)fail('선택 글자 범위를 확인해주세요.');for(const key of ['bold','italic','underline'])if(m[key]!==undefined&&typeof m[key]!=='boolean')fail('글자 서식을 확인해주세요.');return {start:Number(m.start),end:Number(m.end),size:m.size===undefined?undefined:choice(m.size,['small','body','large'] as const),bold:m.bold as boolean|undefined,italic:m.italic as boolean|undefined,underline:m.underline as boolean|undefined,tone:m.tone===undefined?undefined:choice(m.tone,['default','emphasis'] as const)};});}
 function imageUrl(value:unknown):string {
  if(value===undefined||value==='')return '';
  const raw=text(value,2000);let url:URL;try{url=new URL(raw);}catch{return fail('이미지 주소를 확인해주세요.');}
@@ -46,7 +48,7 @@ function schedule(value:unknown):import('./model').ScheduleItem[]|undefined {
 function cards(value:unknown):import('./model').InfoCard[]|undefined {
  if(value===undefined)return undefined;
  if(!Array.isArray(value)||value.length>12)fail('안내 카드는 최대 12개입니다.');
- const items=(value as unknown[]).map(v=>{const i=object(v);return {id:text(i.id,100,true),title:text(i.title,500),text:text(i.text,1000),description:text(i.description,20000)};});
+ const items=(value as unknown[]).map(v=>{const i=object(v);return {id:text(i.id,100,true),title:text(i.title,500),text:text(i.text,1000),description:text(i.description,20000),textSize:i.textSize===undefined?undefined:choice(i.textSize,['small','body','large'] as const),textMarks:marks(i.textMarks,i.text),descriptionSize:i.descriptionSize===undefined?undefined:choice(i.descriptionSize,['small','body','large'] as const),descriptionMarks:marks(i.descriptionMarks,i.description)};});
  if(new Set(items.map(i=>i.id)).size!==items.length)fail('안내 카드가 중복되었습니다.');return items;
 }
 function inputFields(value:unknown):FormInput[]|undefined {
@@ -66,7 +68,7 @@ function module(value: unknown): PageModule {
   // Construct an allow-listed object. Never retain arbitrary HTML, CSS or unknown fields.
   return { id: text(m.id, 100, true), type: choice(m.type, Object.keys(moduleNames) as PageModule['type'][]),
     headerHeight:m.headerHeight===undefined?undefined:Number(m.headerHeight),inputFields:inputFields(m.inputFields),cards:cards(m.cards),schedule:schedule(m.schedule),consents:consents(m.consents),imageAssetId:m.imageAssetId===undefined?undefined:text(m.imageAssetId,100,true),fields:fields(m.fields),imageUrl:imageUrl(m.imageUrl),imageAlt:m.imageAlt===undefined?'':text(m.imageAlt,300),
-    title: text(m.title, 500), body: text(m.body, 20000),
+    title: text(m.title, 500), body: text(m.body, 20000),bodySize:m.bodySize===undefined?undefined:choice(m.bodySize,['small','body','large'] as const),bodyMarks:marks(m.bodyMarks,m.body),
     titleSize: choice(m.titleSize, ['h1','h2','h3','h4','body'] as const, 'h3'),
     titleTone: choice(m.titleTone, ['default','emphasis'] as const, 'emphasis'),
     bodyTone: choice(m.bodyTone, ['default','emphasis'] as const, 'default') };
@@ -78,7 +80,6 @@ export function validateDraft(value: unknown, id: string): EventDraft {
   if (!validSlug(slug)) fail('주소는 영문 소문자·숫자·하이픈으로 입력해주세요.');
   const privacyPolicy=input.privacyPolicy===undefined?'':text(input.privacyPolicy,20000);
   const contactUrl=input.contactUrl===undefined?'':text(input.contactUrl,2000);
-  if(contactUrl){let url:URL;try{url=new URL(contactUrl);}catch{fail('문의 주소를 확인해주세요.');}if(!['https:','mailto:'].includes(url!.protocol)||url!.username||url!.password)fail('문의 주소는 HTTPS 또는 이메일 링크로 입력해주세요.');}
   const retentionDays=input.retentionDays??90;if(![30,90,180,365].includes(Number(retentionDays)))fail('개인정보 보유 기간을 확인해주세요.');
   const maxLength = input.maxLength;
   if (typeof maxLength !== 'number' || !Number.isInteger(maxLength) || maxLength < 1 || maxLength > 1000) fail('글자 수는 1~1000 사이로 설정해주세요.');
@@ -109,7 +110,6 @@ export function validateDraft(value: unknown, id: string): EventDraft {
 }
 export function assertPublishable(draft: EventDraft, stage: Stage) {
   const modules = draft.pages[stage];
-  if(!draft.privacyPolicy?.trim()||!draft.contactUrl)fail('개인정보 처리방침과 문의 주소를 입력해주세요.');
   if (!modules.some(m => m.type === 'hero')) fail('이벤트 소개를 추가해주세요.');
   if (stage !== 'result' && !modules.some(m => m.type === 'consent')) fail('개인정보 동의를 추가해주세요.');
   const consent=modules.find(m=>m.type==='consent');

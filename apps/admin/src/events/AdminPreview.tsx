@@ -1,4 +1,4 @@
-import {BulletTextarea} from "./BulletTextarea";
+import {RichTextEditor} from "./RichTextEditor";
 import {AdminRequestError} from './operations-api';
 import {InputFieldsEditor} from './InputFieldsEditor';
 import {formInputs} from '../../../../packages/event-builder/src/inputs';
@@ -426,7 +426,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
               </div>
               <section className="stage-configuration"><h2>단계 구성</h2>{stagesFor(draft).map((s,i)=><div key={s}><span className="stage-order-number">{String(i+1).padStart(2,'0')}</span><strong>{stageNames[s]}</strong><Button disabled={i===0} onClick={()=>update(d=>{const order=[...stagesFor(d)];[order[i-1],order[i]]=[order[i]!,order[i-1]!];return {...d,stageOrder:order};})}>앞으로 이동</Button><Button disabled={stagesFor(draft).length===1} onClick={()=>{const order=stagesFor(draft).filter(x=>x!==s);update(d=>({...d,stageOrder:order}));if(stage===s)setStage(order[0]!);}}>단계 제외</Button></div>)}{(['submission','voting','result'] as Stage[]).filter(s=>!stagesFor(draft).includes(s)).map(s=><Button key={s} onClick={()=>update(d=>({...d,stageOrder:[...stagesFor(d),s]}))}>{stageNames[s]} 추가</Button>)}</section>
               <section className="stage-configuration"><h2>페이지 이름</h2><label className="field">브라우저 탭 이름<input maxLength={150} value={draft.browserTitle??''} placeholder={`서울아레나 ${draft.title}`} onChange={e=>update(d=>({...d,browserTitle:e.target.value}))}/><small>브라우저 탭에 표시되는 이름입니다. 비워두면 ‘서울아레나 {draft.title}’으로 표시됩니다. 페이지 안의 이벤트 제목은 바뀌지 않습니다.</small></label></section>
-              <section className="stage-configuration"><h2>푸터 설정</h2><label className="field">개인정보 처리방침<textarea rows={8} value={draft.privacyPolicy??''} onChange={e=>update(d=>({...d,privacyPolicy:e.target.value}))}/></label><label className="field">문의 주소<input type="email" value={(draft.contactUrl??'').replace(/^mailto:/,'')} onChange={e=>update(d=>({...d,contactUrl:e.target.value?'mailto:'+e.target.value:''}))} placeholder="담당자@seoularena.net"/></label><label className="field">개인정보 보유 기간<select value={draft.retentionDays??90} onChange={e=>update(d=>({...d,retentionDays:Number(e.target.value)}))}>{[30,90,180,365].map(days=><option key={days} value={days}>참여일로부터 {days}일</option>)}</select></label></section>
+              <section className="stage-configuration"><h2>개인정보 보관 설정</h2><label className="field">개인정보 보유 기간<select value={draft.retentionDays??90} onChange={e=>update(d=>({...d,retentionDays:Number(e.target.value)}))}>{[30,90,180,365].map(days=><option key={days} value={days}>참여일로부터 {days}일</option>)}</select></label></section>
               <div className="editor-stepbar">
                 <Tabs.Root
                   value={stage}
@@ -599,29 +599,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
                       {selectedModule.type==='image'&&<>{storage?.upload&&<label className="field">이미지 업로드<input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const id=await storage.upload!(draft.id,file);patchModule({imageAssetId:id,imageUrl:''});setMessage('이미지를 업로드했습니다. 페이지를 저장해주세요.');}catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'업로드하지 못했습니다.');}}}/></label>}<label className="field">이미지 주소<input type="url" value={selectedModule.imageUrl??''} onChange={e=>patchModule({imageUrl:e.target.value})} placeholder="https://.../image.jpg"/></label><label className="field">이미지 설명<input value={selectedModule.imageAlt??''} onChange={e=>patchModule({imageAlt:e.target.value})}/></label></>}
                       <label className="field">제목 크기<select aria-label="제목 크기" value={selectedModule.titleSize??(selectedModule.type==="hero"?"body":"h3")} onChange={e=>patchModule({titleSize:e.target.value as TextSize})}><option value="h1">H1 · 가장 크게</option><option value="h2">H2 · 크게</option><option value="h3">H3 · 중간</option><option value="h4">H4 · 작게</option><option value="body">본문 크기</option></select></label>
                       <label className="field">제목 색상<select aria-label="제목 색상" value={selectedModule.titleTone??"emphasis"} onChange={e=>patchModule({titleTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
-                      <label className="field">
-                        설명
-                        {selectedModule.type==='notices'?<BulletTextarea aria-label="설명" className="body-editor" value={selectedModule.body} onValueChange={body=>patchModule({body})}/>:<>                        <textarea
-                          aria-label="설명"
-                          className="body-editor"
-                          value={selectedModule.body}
-                          onChange={(e) =>
-                            update((d) => ({
-                              ...d,
-                              pages: {
-                                ...d.pages,
-                                [stage]: d.pages[stage].map((m) =>
-                                  m.id === moduleId
-                                    ? { ...m, body: e.target.value }
-                                    : m,
-                                ),
-                              },
-                            }))
-                          }
-                        />
-</>}
-                        <small>{selectedModule.type==='notices'?'한 줄에 한 항목 · Tab 들여쓰기 / Shift+Tab 내어쓰기. 들여쓴 항목은 빈 원 불렛으로 표시됩니다.':'줄을 바꾸면 문단이 나뉩니다.'}</small>
-                      </label>
+                      <RichTextEditor label="설명" value={selectedModule.body} size={selectedModule.bodySize??(selectedModule.type==='notices'?'small':'body')} marks={selectedModule.bodyMarks} bullets={selectedModule.type==='notices'} onChange={(body,bodyMarks,bodySize)=>patchModule({body,bodyMarks,bodySize})}/>
                       <label className="field">본문 색상<select aria-label="본문 색상" value={selectedModule.bodyTone??"default"} onChange={e=>patchModule({bodyTone:e.target.value as TextTone})}><option value="default">기본 · 회색</option><option value="emphasis">강조 · 흰색</option></select></label>
                       </>}
                       {selectedModule.type==='intro'&&<InfoCardsEditor items={selectedModule.cards??[{id:selectedModule.id+'-card',title:selectedModule.title,text:'',description:selectedModule.body}]} onChange={cards=>patchModule({cards,...(!selectedModule.cards?{title:'',body:''}:{})})}/>}
@@ -673,7 +651,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
       <Modal className="editor-conflict-dialog" open={!!latest} onOpenChange={v=>{if(!v)setLatest(null);}} title="최신 내용 확인" description="내 수정 내용은 아직 변경되지 않았습니다. 필요한 내용을 보관한 뒤 최신 버전에서 다시 편집해주세요.">
        {latest&&<><div className="row"><Button onClick={()=>setCompareMine(true)} aria-pressed={compareMine}>내 수정 화면</Button><Button onClick={()=>setCompareMine(false)} aria-pressed={!compareMine}>최신 저장 화면</Button><Button onClick={backup}>내 초안 파일로 보관</Button></div>
        <EventPage event={compareMine?draft:latest} stage={stagesFor(compareMine?draft:latest).includes(stage)?stage:stagesFor(compareMine?draft:latest)[0]!} embedded/>
-       <h3>푸터 설정</h3><p className="conflict-policy">{(compareMine?draft:latest).privacyPolicy||'개인정보 처리방침 없음'}</p><p>{(compareMine?draft:latest).contactUrl}</p>
+
        <Button onClick={()=>navigate(()=>{setDraft(structuredClone(latest));if(!stagesFor(latest).includes(stage)){setStage(stagesFor(latest)[0]!);setModuleId("hero");}setEvents(items=>items.map(e=>e.id===latest.id?latest:e));setDirty(false);setConflict(false);setSaved(true);setLatest(null);} )}>최신 버전으로 다시 편집</Button></>}
       </Modal>
       <Modal

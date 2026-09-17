@@ -1,3 +1,4 @@
+import type {BodySize,TextMark} from './rich-text';
 export type ModuleType =
   | "header-image"
   | "schedule"
@@ -14,9 +15,11 @@ export type Stage = "submission" | "voting" | "result";
 export type TextSize = "h1" | "h2" | "h3" | "h4" | "body";
 export type TextTone = "default" | "emphasis";
 export interface InputField {id:string;label:string;type:"text"|"textarea"|"number"|"select";required:boolean;maxLength:number;options:string[]}
-export interface InfoCard {id:string;title:string;text:string;description:string}
+export interface InfoCard {id:string;title:string;text:string;description:string;textSize?:BodySize;textMarks?:TextMark[];descriptionSize?:BodySize;descriptionMarks?:TextMark[]}
 export interface ScheduleItem {id:string;title:string;start:string;end:string;description:string}
 export interface PageModule {
+  bodySize?: BodySize;
+  bodyMarks?: TextMark[];
   inputFields?: import("./inputs").FormInput[];
   cards?: InfoCard[];
   schedule?: ScheduleItem[];
