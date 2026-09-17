@@ -1,3 +1,4 @@
+import {publicReadCacheTtl,publicCacheHeaders} from './public-cache.js';
 /*
  * 참고: 아래는 패키지 이름(@first-seat/...)이 아니라 상대 경로로 가져온다.
  * Vercel Edge 번들러가 워크스페이스 패키지의 TypeScript 원본을 해석하지 못해
@@ -104,8 +105,12 @@ export async function relayRequest(request: Request, options: RelayOptions): Pro
   for (const cookie of upstream.headers.getSetCookie?.() ?? []) {
     responseHeaders.append('Set-Cookie', cookie);
   }
-  // API 결과와 세션 쿠키는 CDN에 저장하지 않는다.
-  responseHeaders.set('Cache-Control', 'no-store');
+  // Cache only known public reads; ignore upstream cache headers on every other route.
+  const ttl=publicReadCacheTtl(request.method,url.pathname,upstream.status,upstream.headers.has('set-cookie'));
+  responseHeaders.delete('CDN-Cache-Control');
+  responseHeaders.delete('Vercel-CDN-Cache-Control');
+  responseHeaders.set('Cache-Control','no-store');
+  if(ttl)for(const [key,value] of Object.entries(publicCacheHeaders(ttl)))responseHeaders.set(key,value);
   return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
 }
 

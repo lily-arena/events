@@ -27,13 +27,14 @@ export default {
    const assetMatch=/^\/api\/admin\/events\/([^/]+)\/assets\/([^/]+)$/.exec(url.pathname);
    if(assetMatch&&request.method==='GET'){const asset=await env.DATA.asset(identity,assetMatch[1]!,assetMatch[2]!);if(!asset)return new Response(null,{status:404});return new Response(Uint8Array.from(atob(asset.content_base64),c=>c.charCodeAt(0)),{headers:{'Content-Type':asset.mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
    if(url.pathname==='/api/admin/session') return json({email:identity.email,local:identity.provider==='local'});
-   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(edit-state|save-publish|duplicate|archive|delete-scope|delete-prepare|delete|reset-scope|reset-prepare|reset|entries|review-entries|comment|draw-participants|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
+   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(monitoring|edit-state|save-publish|duplicate|archive|delete-scope|delete-prepare|delete|reset-scope|reset-prepare|reset|entries|review-entries|comment|draw-participants|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
    if(!match) return json({error:'페이지를 찾을 수 없습니다.'},404);
    const id=match[1],action=match[2], input=body?JSON.parse(body):{};
    if(!id && request.method==='GET') return json(await env.DATA.list(identity));
    if(!id && request.method==='POST') return json(await env.DATA.create(identity,input),201);
    if(id && !action && request.method==='GET') return json(await env.DATA.get(identity,id));
    if(id && !action && request.method==='PUT') return json(await env.DATA.save(identity,id,input.revision,input.draft));
+   if(id&&action==='monitoring'&&request.method==='GET'){const period=url.searchParams.get('period')??'hour';if(!['hour','day','week'].includes(period))return json({error:'집계 단위를 확인해주세요.'},400);return json(await env.DATA.monitoring(identity,id,period as 'hour'|'day'|'week'));}
    if(id && action==='edit-state'&&request.method==='GET')return json(await env.DATA.editState(identity,id));
    if(id && action==='save-publish'&&request.method==='POST')return json(await env.DATA.saveAndPublish(identity,id,input.revision,input.draft));
    if(id && action==='duplicate' && request.method==='POST') return json(await env.DATA.duplicate(identity,id,input.title,input.slug),201);

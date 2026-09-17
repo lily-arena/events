@@ -1,3 +1,5 @@
+import {recordPageView,readMonitoring} from './monitoring';
+import type {MonitoringPeriod} from '../../../../packages/domain/src/event-monitoring';
 import {checkVote} from './vote-check';
 import {purgeExpired} from './retention';
 import { WorkerEntrypoint } from 'cloudflare:workers';
@@ -54,14 +56,17 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async revealOutcome(identity:Identity,id:string,participantId:string,success:boolean){return (await this.repository(identity)).revealOutcome(id,participantId,success);}
  async deletePrivate(identity:Identity,id:string,participantId:string){return (await this.repository(identity)).deletePrivate(id,participantId);}
  async participants(identity:Identity,id:string){return (await this.repository(identity)).participants(id);}
+ async monitoring(identity:Identity,id:string,period:MonitoringPeriod){await (await this.repository(identity)).get(id);return readMonitoring(this.env.DB,id,period);}
  async auditLog(identity:Identity,id:string){return (await this.repository(identity)).auditLog(id);}
 
 }
 export class PublicEventsData extends WorkerEntrypoint<Env> {
+ async pageView(slug:string,visitId:string){return recordPageView(this.env.DB,slug,visitId);}
+ async state(slug:string){return this.env.DB.prepare("SELECT e.revision,s.id,s.kind,s.round,s.accepting,s.starts_at,s.ends_at FROM events e JOIN event_stages s ON s.event_id=e.id AND s.id=e.current_stage_id WHERE e.slug=? AND e.visibility='published' AND e.published_json IS NOT NULL").bind(slug).first<{revision:number;id:string;kind:string;round:number;accepting:number;starts_at:number|null;ends_at:number|null}>();}
  async image(slug:string,assetId:string) {
-  const view=await this.event(slug);
-  if(!view||!Object.values(view.event.pages).flat().some((m:any)=>m.imageAssetId===assetId))return null;
-  return this.env.DB.prepare('SELECT content_base64,mime FROM event_assets WHERE event_id=? AND id=?').bind(view.event.id,assetId).first<{content_base64:string;mime:string}>();
+  const row=await this.env.DB.prepare("SELECT id,published_json,current_stage_id FROM events WHERE slug=? AND visibility='published' AND published_json IS NOT NULL").bind(slug).first<{id:string;published_json:string;current_stage_id:string}>();
+  if(!row||!(JSON.parse(row.published_json).pages[row.current_stage_id]??[]).some((m:any)=>m.imageAssetId===assetId))return null;
+  return this.env.DB.prepare('SELECT content_base64,mime FROM event_assets WHERE event_id=? AND id=?').bind(row.id,assetId).first<{content_base64:string;mime:string}>();
  }
  async checkVote(eventId:string,stageId:string,round:number,identities:ParticipationInput['identities'],rateHmac:string) {return checkVote(this.env.DB,eventId,stageId,round,identities,rateHmac);}
  async participate(input:ParticipationInput) {return acceptParticipation(this.env.DB,input);}

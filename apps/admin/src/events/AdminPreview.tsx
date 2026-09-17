@@ -115,10 +115,10 @@ export interface EditorStorage {
  save: (draft: EventDraft) => Promise<EventDraft>;
  create: (draft: EventDraft) => Promise<EventDraft>;
 }
-export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}) {
+export default function AdminPreview({ storage, initialOperationSection }: {storage?: EditorStorage; initialOperationSection?: string} = {}) {
   const [events, setEvents] = useState<EventDraft[]>(() => storage?.initialEvents ?? readDrafts());
-  const [view, setView] = useState<"list" | "editor" | "operations">("list");
-  const [operationSection,setOperationSection]=useState('overview');
+  const [view, setView] = useState<"list" | "editor" | "operations">(initialOperationSection?"operations":"list");
+  const [operationSection,setOperationSection]=useState(initialOperationSection??'overview');
   const [selected, setSelected] = useState(events[0]?.id ?? "");
   const [stage, setStage] = useState<Stage>("submission");
   const [moduleId, setModuleId] = useState("hero");
@@ -253,7 +253,7 @@ export default function AdminPreview({ storage }: {storage?: EditorStorage} = {}
             <div className="nav-event-children">
               <button className={selected===item.id&&view==='editor'?'active':''} onClick={()=>{openEditor(item);}}>콘텐츠 편집</button>
               <button className={selected===item.id&&view==='operations'?'nav-expanded':''} aria-expanded={selected===item.id&&view==='operations'} onClick={()=>navigate(()=>{setSelected(item.id);setView('operations');})}>운영</button>
-              {selected===item.id&&view==='operations'&&<div className="nav-operation-children">{[['overview','공개·일정'],['review','응모작 심사'],['voting','후보·투표'],['result','결과 선정'],['privacy','개인정보'],['audit','운영 기록'],['settings','설정']].map(([key,label])=><button key={key} aria-current={operationSection===key?'page':undefined} className={operationSection===key?'active':''} onClick={()=>setOperationSection(key!)}>{label}</button>)}</div>}
+              {selected===item.id&&view==='operations'&&<div className="nav-operation-children">{[['overview','공개·일정'],['review','응모작 심사'],['voting','후보·투표'],['result','결과 선정'],['privacy','개인정보'],['monitoring','모니터링'],['audit','운영 기록'],['settings','설정']].map(([key,label])=><button key={key} aria-current={operationSection===key?'page':undefined} className={operationSection===key?'active':''} onClick={()=>setOperationSection(key!)}>{label}</button>)}</div>}
             </div>
           </div>)}
         </nav>

@@ -13,5 +13,6 @@ export async function purgeExpired(db:D1Database,now=Date.now()) {
   ]);
  }
  await db.batch([q('DELETE FROM event_requests WHERE expires_at<=?',now),q('DELETE FROM event_reset_tokens WHERE expires_at<=?',now),q('DELETE FROM event_rate_limits WHERE window<?',Math.floor(now/300000)-12)]);
+ await db.batch([q('DELETE FROM event_pageview_receipts WHERE created_at<?',now-86400000),q('DELETE FROM event_pageviews WHERE bucket<?',now-90*86400000)]);
  return expired.length;
 }

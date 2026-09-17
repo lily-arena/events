@@ -1,3 +1,4 @@
+import {EventMonitoring} from './EventMonitoring';
 import {EventDeletion} from './EventDeletion';
 import {PrivateDetails} from './PrivateDetails';
 import {EntryReview} from './EntryReview';
@@ -45,6 +46,7 @@ export function EventOperations({event,onChanged,onDeleted,section='overview'}:{
    <div className="stage-schedule"><h4>{stageNames[stage]} 일정</h4><label>시작<input type="datetime-local" value={starts} onChange={e=>setStarts(e.target.value)}/></label><label>종료<input type="datetime-local" value={ends} onChange={e=>setEnds(e.target.value)}/></label><Button disabled={busy||!readiness} onClick={()=>run(()=>api(base+'/schedule','POST',{stage,startsAt:starts?new Date(starts).getTime():null,endsAt:ends?new Date(ends).getTime():null,revision:row.revision}))}>일정 저장</Button></div>
    </div>
   </section>
+  {section==='monitoring'&&<EventMonitoring eventId={event.id}/>}
   {section==='review'&&<EntryReview key={event.id} base={base} revision={row.activity_revision} onChanged={async()=>{}}/>}
   <section hidden={section!=='voting'}><h2>후보·투표</h2>
    {!candidates.length?<AdminNotice tone="info">응모작 심사에서 상태를 ‘후보’로 변경하면 여기에 표시됩니다.</AdminNotice>:<>

@@ -9,7 +9,7 @@ export function memoryD1(schema: string) {
    bind(...values: unknown[]) { args=values; return statement; },
    async first<T>() { return sqlite.prepare(sql).get(...args as never[]) as T ?? null; },
    async all() { return {success:true,results:sqlite.prepare(sql).all(...args as never[])}; },
-   async run() { const result=sqlite.prepare(sql).run(...args as never[]); return {success:true,meta:{changes:Number(result.changes)}}; }
+   async run() { const prepared=sqlite.prepare(sql);if(prepared.columns().length)return {success:true,results:prepared.all(...args as never[]),meta:{changes:0}};const result=prepared.run(...args as never[]); return {success:true,meta:{changes:Number(result.changes)}}; }
   }; return statement;
  }
  return { sqlite, db: { prepare, async batch(statements: {run:()=>Promise<unknown>}[]) {

@@ -9,7 +9,7 @@ interface Env {DATA:PublicEventsData;ENVIRONMENT:string;GATEWAY_SECRET:string;PI
 const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers});
 export default {async fetch(request:Request,env:Env):Promise<Response>{
- const url=new URL(request.url),match=/^\/api\/events\/([a-z0-9-]+)(?:\/(participate|vote-check|assets)(?:\/([a-f0-9-]+))?)?$/.exec(url.pathname);
+ const url=new URL(request.url),match=/^\/api\/events\/([a-z0-9-]+)(?:\/(participate|vote-check|assets|state|page-view)(?:\/([a-f0-9-]+))?)?$/.exec(url.pathname);
  if(!match)return new Response(null,{status:404});
  if(Number(request.headers.get('content-length')??0)>32768)return json({error:'입력 내용이 너무 큽니다.'},413);
  const body=request.method==='GET'?'':await request.text();if(body.length>32768)return json({error:'입력 내용이 너무 큽니다.'},413);
@@ -18,6 +18,8 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
   let ip='local';
   if(!local){const verified=await verifyGatewayRequest(env.GATEWAY_SECRET,request,body);if(!verified.ok)return json({error:'허용되지 않은 요청입니다.'},403);ip=verified.clientIp??'unknown';}
   else if(request.method!=='GET'&&request.headers.get('origin')!=='http://127.0.0.1:5190')return json({error:'허용되지 않은 요청입니다.'},403);
+  if(match[2]==='page-view'&&request.method==='POST'){const input=JSON.parse(body);if(typeof input.visitId!=='string'||! /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(input.visitId))return json({error:'잘못된 조회 요청입니다.'},400);await env.DATA.pageView(match[1]!,input.visitId);return new Response(null,{status:204,headers});}
+  if(match[2]==='state'&&request.method==='GET'){const state=await env.DATA.state(match[1]!);return state?json(state):new Response(null,{status:404,headers});}
   if(match[2]==='assets'&&match[3]&&request.method==='GET'){const asset=await env.DATA.image(match[1]!,match[3]);if(!asset)return new Response(null,{status:404});return new Response(Uint8Array.from(atob(asset.content_base64),c=>c.charCodeAt(0)),{headers:{'Content-Type':asset.mime,'Cache-Control':'public, max-age=300','X-Content-Type-Options':'nosniff'}});}
   const view=await env.DATA.event(match[1]!);if(!view)return new Response(null,{status:404});
   if(request.method==='GET'&&!match[2])return json({...view,turnstileSiteKey:env.TURNSTILE_SITE_KEY??'',local});
@@ -51,5 +53,5 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
   try{receipt=await env.DATA.participate({eventId:view.event.id,stageId:String(stage.id),round:Number(stage.round),revision:input.revision,participantId,kind,message:input.message,candidateId:input.candidateId??'',policyIds:input.policyIds,envelope,masked:maskedParticipant(participant),identities,requestKey:input.requestKey,payloadHmac:await hmacSha256Hex(env.IDENTITY_HMAC_KEY,canonicalJson({participant,message:input.message,candidate:input.candidateId,policies:input.policyIds})),rateHmac:await hmacSha256Hex(env.IDENTITY_HMAC_KEY,JSON.stringify([view.event.id,ip])),identityKeyVersion:env.PII_KEY_VERSION});
   }catch(error){if(await duplicate())return json({code:'DUPLICATE_VOTE',error:'이미 투표에 사용된 참여 정보가 있습니다. 중복 투표는 할 수 없습니다.'},409);throw error;}
   return json(receipt,201);
- }catch{return json({error:'참여를 완료하지 못했습니다. 입력 내용·이벤트 상태·중복 참여 여부를 확인해주세요.'},409);}
+ }catch{if(request.method==='GET'||match[2]==='page-view')return json({error:'잠시 후 다시 시도해주세요.'},503);return json({error:'참여를 완료하지 못했습니다. 입력 내용·이벤트 상태·중복 참여 여부를 확인해주세요.'},409);}
 }};
