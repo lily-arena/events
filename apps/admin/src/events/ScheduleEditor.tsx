@@ -1,3 +1,4 @@
+import type {TextSize} from '../../../../packages/event-builder/src/model';
 import type {ScheduleItem} from '../../../../packages/event-builder/src/model';
 import {Button} from '../../../../packages/ui/src';
 export function ScheduleEditor({items,onChange}:{items:ScheduleItem[];onChange:(items:ScheduleItem[])=>void}) {
@@ -5,6 +6,7 @@ export function ScheduleEditor({items,onChange}:{items:ScheduleItem[];onChange:(
  const move=(index:number,offset:number)=>{const next=[...items];[next[index],next[index+offset]]=[next[index+offset]!,next[index]!];onChange(next);};
  return <div><p>화면에 표시할 일정입니다. 실제 접수·투표 기간은 운영 → 공개·일정에서 설정해주세요.</p>{items.map((item,index)=><fieldset key={item.id}><legend>일정 {index+1}</legend>
  <label className="field">일정명<input maxLength={100} value={item.title} onChange={e=>patch(index,{title:e.target.value})}/></label>
+ <label className="field">카드 제목 크기<select aria-label="카드 제목 크기" value={item.titleSize??''} onChange={e=>patch(index,{titleSize:(e.target.value||undefined) as TextSize|undefined})}><option value="">기본 크기</option><option value="h1">H1 · 가장 크게</option><option value="h2">H2 · 크게</option><option value="h3">H3 · 중간</option><option value="h4">H4 · 작게</option><option value="body">본문 크기</option></select></label>
  <label className="field">시작일<input type="date" value={item.start} onChange={e=>patch(index,{start:e.target.value})}/></label>
  <label className="field">종료일<input type="date" min={item.start||undefined} value={item.end} onChange={e=>patch(index,{end:e.target.value})}/></label>
  <small>하루 일정은 시작일만 입력합니다. 날짜가 없으면 ‘추후 안내’로 표시됩니다.</small>
