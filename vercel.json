@@ -9,7 +9,7 @@
     },
     {
       "source": "/",
-      "destination": "/api/gateway"
+      "destination": "/api/page"
     },
     {
       "source": "/admin",
