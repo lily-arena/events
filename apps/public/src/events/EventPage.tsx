@@ -75,6 +75,7 @@ export function EventPage({
   return (
     <div
       className={`event-page event-theme-dark ${embedded ? "embedded" : ""}`}
+      data-stage={stage}
     >
       <header className={`public-header ${headerImage?'image-header':''}`} style={headerImage?{minHeight:`${headerImage.headerHeight??80}vh`}:undefined} data-edit-selected={embedded&&headerImage&&selectedModuleId===headerImage.id?true:undefined} onClick={embedded&&headerImage?()=>onSelectModule?.(headerImage.id):undefined}>
         {headerImage&&(headerImage.imageAssetId||headerImage.imageUrl)&&<img className="header-background" src={headerImage.imageAssetId?(embedded?`/api/admin/events/${event.id}/assets/${headerImage.imageAssetId}`:`/api/events/${event.slug}/assets/${headerImage.imageAssetId}`):headerImage.imageUrl} alt={headerImage.imageAlt??''}/>}

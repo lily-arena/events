@@ -390,3 +390,8 @@ html:has(.event-page:not(.embedded)),body:has(.event-page:not(.embedded)){backgr
 .event-page .event-content > .event-hero{padding-block:96px;}
 @media(max-width:760px){.event-page:not(.embedded){padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));}.event-page .event-content > .event-hero{padding-block:96px;}}
 .preview-canvas.mobile .event-page .event-content > .event-hero{padding-block:96px;}
+
+/* Results retain bottom spacing plus the introduction’s 96px top spacing. */
+.event-page[data-stage="result"] .event-content{padding-bottom:216px;}
+@media(max-width:760px){.event-page[data-stage="result"] .event-content{padding-bottom:192px;}}
+.preview-canvas.mobile .event-page[data-stage="result"] .event-content{padding-bottom:192px;}
