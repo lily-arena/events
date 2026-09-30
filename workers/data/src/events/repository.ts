@@ -1,3 +1,5 @@
+import {Followers,followJoins,followStatus} from './followers';
+import {weightedDraw} from '../../../../packages/domain/src/follower-draw';
 import {encodePolicy,consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
 import { sha256Hex } from '../../../../packages/security/src/hash';
 import { stagesFor, type EventDraft, type Stage } from '../../../../packages/event-builder/src/model';
@@ -126,7 +128,7 @@ export class EventsRepository {
   const filter=kind==='submission'?' AND entry_id IS NOT NULL':kind==='voting'?' AND vote_id IS NOT NULL':'';
   const rowFilter=filter.replace('entry_id','p.entry_id').replace('vote_id','p.vote_id');if(!Number.isSafeInteger(page)||page<1)throw new Error('페이지를 확인해주세요.');
   const count=await this.statement('SELECT count(*) AS total FROM event_participants WHERE event_id=?'+filter,id).first<{total:number}>(),total=count?.total??0,pageSize=50,current=Math.min(page,Math.max(1,Math.ceil(total/pageSize)));
-  const entries=(await this.statement("SELECT p.id,p.masked_json,p.entry_id,p.vote_id,coalesce(e.message,c.message,'') AS message,coalesce(e.created_at,v.created_at) AS created_at,coalesce(e.status,'vote') AS status FROM event_participants p LEFT JOIN event_entries e ON e.event_id=p.event_id AND e.id=p.entry_id LEFT JOIN event_votes v ON v.event_id=p.event_id AND v.id=p.vote_id LEFT JOIN event_candidates c ON c.event_id=v.event_id AND c.stage_id=v.stage_id AND c.round=v.round AND c.id=v.candidate_id WHERE p.event_id=?"+rowFilter+" ORDER BY coalesce(e.created_at,v.created_at) DESC,p.id LIMIT ? OFFSET ?",id,pageSize,(current-1)*pageSize).all()).results;
+  const entries=(await this.statement("SELECT "+(kind==='voting'?followStatus+" AS follow_status,fi.id AS snapshot_id,":"")+"p.id,p.masked_json,p.entry_id,p.vote_id,coalesce(e.message,c.message,'') AS message,coalesce(e.created_at,v.created_at) AS created_at,coalesce(e.status,'vote') AS status FROM event_participants p LEFT JOIN event_entries e ON e.event_id=p.event_id AND e.id=p.entry_id LEFT JOIN event_votes v ON v.event_id=p.event_id AND v.id=p.vote_id LEFT JOIN event_candidates c ON c.event_id=v.event_id AND c.stage_id=v.stage_id AND c.round=v.round AND c.id=v.candidate_id"+(kind==='voting'?followJoins:"")+" WHERE p.event_id=?"+rowFilter+" ORDER BY coalesce(e.created_at,v.created_at) DESC,p.id LIMIT ? OFFSET ?",id,pageSize,(current-1)*pageSize).all()).results;
   const collected=await this.statement(`SELECT
    max(CASE WHEN entry_id IS NOT NULL AND coalesce(json_extract(masked_json,'$.name'),'')<>'' THEN 1 ELSE 0 END) AS name,
    max(CASE WHEN coalesce(json_extract(masked_json,'$.birthDate'),'')<>'' THEN 1 ELSE 0 END) AS birthDate,
@@ -135,7 +137,10 @@ export class EventsRepository {
    max(CASE WHEN coalesce(json_extract(masked_json,'$.instagram'),'')<>'' THEN 1 ELSE 0 END) AS instagram
    FROM event_participants WHERE event_id=?${filter}`,id).first<Record<string,number>>();
   const columns=['name','birthDate','phone','email','instagram'].filter(key=>collected?.[key]);
-  return {entries,total,page:current,pageSize,columns};
+  const followingCount=kind==='voting'?(await this.statement("SELECT count(*) AS n FROM event_participants p"+followJoins+" WHERE p.event_id=? AND p.vote_id IS NOT NULL AND fm.identity_hmac IS NOT NULL",id).first<{n:number}>())?.n??0:0;
+  const followers=kind==='voting'?await new Followers(this.db,this.actor).metadata(id):null;
+  if(kind==='voting'&&entries.some(p=>(p.snapshot_id??null)!==(followers?.id??null)))throw new Error('팔로워 자료가 변경되었습니다. 새로 불러온 뒤 다시 시도해주세요.');
+  return {entries,total,page:current,pageSize,columns,...(kind==='voting'?{followers,followingCount}:{})};
  }
  async auditLog(id:string) {await this.get(id);return (await this.statement('SELECT action,target_id,metadata_json,created_at FROM event_audit WHERE event_id=? ORDER BY created_at DESC LIMIT 200',id).all()).results;}
  async deletePrivate(id:string,participantId:string) {
@@ -182,12 +187,16 @@ export class EventsRepository {
   if(!result.meta.changes)throw new Error('다른 운영자가 코멘트를 변경했습니다. 새로 불러온 뒤 확인해주세요.');
   return {review_comment:comment,comment_revision:revision+1};
  }
- async drawParticipants(id:string,kind:string,count:number){
+ async followerBegin(id:string,date:unknown,previous:unknown){await this.get(id);return new Followers(this.db,this.actor).begin(id,date,previous);}
+ async followerContext(id:string,upload:string){await this.get(id);return new Followers(this.db,this.actor).context(id,upload);}
+ async followerChunk(id:string,upload:string,position:number,hashes:string[]){await this.get(id);return new Followers(this.db,this.actor).chunk(id,upload,position,hashes);}
+ async followerApply(id:string,upload:string,chunks:number,count:number){await this.get(id);return new Followers(this.db,this.actor).apply(id,upload,chunks,count);}
+ async drawParticipants(id:string,kind:string,count:number,multiplier=1,snapshot:string|null=null){
   await this.get(id);if(!['submission','voting'].includes(kind)||!Number.isSafeInteger(count)||count<1||count>100)throw new Error('추첨 인원은 1~100명으로 입력해주세요.');
-  const rows=(await this.statement('SELECT id,masked_json,entry_id,vote_id FROM event_participants WHERE event_id=? AND '+(kind==='voting'?'vote_id':'entry_id')+' IS NOT NULL ORDER BY id',id).all()).results;
+  const rows=(await this.statement('SELECT p.id,p.masked_json,p.entry_id,p.vote_id'+(kind==='voting'?','+followStatus+' AS follow_status,fi.id AS snapshot_id':'')+' FROM event_participants p'+(kind==='voting'?followJoins:'')+' WHERE p.event_id=? AND p.'+(kind==='voting'?'vote_id':'entry_id')+' IS NOT NULL ORDER BY p.id',id).all<{id:string;masked_json:string;follow_status?:string;snapshot_id?:string|null}>()).results;
   if(count>rows.length)throw new Error('추첨 인원이 대상 인원보다 많습니다.');
-  for(let i=0;i<count;i++){const n=rows.length-i,limit=4294967296-4294967296%n;let r:number;do{r=crypto.getRandomValues(new Uint32Array(1))[0]!;}while(r>=limit);const j=i+r%n;[rows[i],rows[j]]=[rows[j]!,rows[i]!];}
-  return {entries:rows.slice(0,count),total:rows.length};
+  if(kind==='voting'&&rows.some(r=>(r.snapshot_id??null)!==snapshot))throw new Error('팔로워 자료가 변경되었습니다. 새로 불러온 뒤 다시 시도해주세요.');
+  return {entries:weightedDraw(rows,count,kind==='voting'?multiplier:1),total:rows.length};
  }
  async policies(id: string) {
   await this.get(id);

@@ -40,7 +40,11 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
  async entries(identity:Identity,id:string) {return (await this.repository(identity)).entries(id);}
  async reviewEntries(identity:Identity,id:string,status:string,query:string,page:number){return (await this.repository(identity)).reviewEntries(id,status,query,page);}
  async comment(identity:Identity,id:string,entryId:string,comment:string,revision:number){return (await this.repository(identity)).comment(id,entryId,comment,revision);}
- async drawParticipants(identity:Identity,id:string,kind:string,count:number){return (await this.repository(identity)).drawParticipants(id,kind,count);}
+ async followerBegin(identity:Identity,id:string,date:unknown,previous:unknown){return (await this.repository(identity)).followerBegin(id,date,previous);}
+ async followerContext(identity:Identity,id:string,upload:string){return (await this.repository(identity)).followerContext(id,upload);}
+ async followerChunk(identity:Identity,id:string,upload:string,position:number,hashes:string[]){return (await this.repository(identity)).followerChunk(id,upload,position,hashes);}
+ async followerApply(identity:Identity,id:string,upload:string,chunks:number,count:number){return (await this.repository(identity)).followerApply(id,upload,chunks,count);}
+ async drawParticipants(identity:Identity,id:string,kind:string,count:number,multiplier=1,snapshot:string|null=null){return (await this.repository(identity)).drawParticipants(id,kind,count,multiplier,snapshot);}
  async policies(identity:Identity,id:string) {return (await this.repository(identity)).policies(id);}
  async savePolicy(identity:Identity,id:string,stage:string,kind:string,body:string,revision:number) {return (await this.repository(identity)).savePolicy(id,stage,kind,body,revision);}
  async publish(identity:Identity,id:string,revision:number) {return (await this.repository(identity)).publish(id,revision);}

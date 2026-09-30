@@ -1141,3 +1141,7 @@
 .entry-comment .entry-comment-control input{height:44px;min-height:44px;margin:0;padding:8px 70px 8px 10px;font-size:14px;line-height:22px;}
 .entry-comment .entry-comment-control .button{position:absolute;right:4px;top:6px;height:32px;min-height:32px;margin:0;padding:4px 10px;border-radius:3px;font-size:12px;line-height:20px;}
 .entry-comment [role=alert]{display:block;margin-top:6px;white-space:normal;}
+
+.follower-dropzone{margin:24px 0;padding:22px 16px;border:2px dashed #bbb;border-radius:10px;text-align:left}.follower-dropzone.is-dragging{border-color:#191919;background:#f0f0f0}.follower-dropzone input{max-width:100%;width:100%;min-width:0}.follower-upload details ol{padding-left:24px;color:#666;line-height:1.7}.follower-upload .follower-error{color:#b91c1c}.follower-upload h3{word-break:keep-all}
+
+.follower-weight-control{display:flex;align-items:center;gap:8px;white-space:nowrap}.follower-weight-control input{width:120px;min-width:0}.participant-draw .row{flex-wrap:wrap}

@@ -1,9 +1,11 @@
+import {normalizeInstagram} from '../../../../packages/domain/src/follower-draw';
+import {hmacSha256Hex} from '../../../../packages/security/src/hash';
 import {adminErrorMessage} from './errors';
 import {importPrivateKey} from '../../../../packages/security/src/envelope';
 import {decryptParticipant} from '../../../../packages/security/src/event-participant';
 import { verifyGatewayRequest } from '../../../../packages/security/src/gateway';
 import type { AdminEventsData } from '../../../data/src/events/index';
-interface Env { DATA: AdminEventsData; ENVIRONMENT: string; GATEWAY_SECRET: string; PII_PRIVATE_KEY:string }
+interface Env { DATA: AdminEventsData; ENVIRONMENT: string; GATEWAY_SECRET: string; PII_PRIVATE_KEY:string; IDENTITY_HMAC_KEY:string }
 const headers = {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
 const json = (body: unknown,status=200)=>new Response(JSON.stringify(body??{ok:true}),{status,headers});
 export default {
@@ -27,7 +29,7 @@ export default {
    const assetMatch=/^\/api\/admin\/events\/([^/]+)\/assets\/([^/]+)$/.exec(url.pathname);
    if(assetMatch&&request.method==='GET'){const asset=await env.DATA.asset(identity,assetMatch[1]!,assetMatch[2]!);if(!asset)return new Response(null,{status:404});return new Response(Uint8Array.from(atob(asset.content_base64),c=>c.charCodeAt(0)),{headers:{'Content-Type':asset.mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
    if(url.pathname==='/api/admin/session') return json({email:identity.email,local:identity.provider==='local'});
-   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(monitoring|edit-state|save-publish|duplicate|archive|delete-scope|delete-prepare|delete|reset-scope|reset-prepare|reset|entries|review-entries|comment|draw-participants|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
+   const match=/^\/api\/admin\/events(?:\/([^/]+))?(?:\/(follower-begin|follower-chunk|follower-apply|monitoring|edit-state|save-publish|duplicate|archive|delete-scope|delete-prepare|delete|reset-scope|reset-prepare|reset|entries|review-entries|comment|draw-participants|policies|policy|publish|candidates|review|reorder-candidates|participant-page|confirm-candidates|result|transition-preview|transition|reveal|delete-private|audit|participants|schedule|upload))?$/.exec(url.pathname);
    if(!match) return json({error:'페이지를 찾을 수 없습니다.'},404);
    const id=match[1],action=match[2], input=body?JSON.parse(body):{};
    if(!id && request.method==='GET') return json(await env.DATA.list(identity));
@@ -48,7 +50,19 @@ export default {
    if(id && action==='upload' && request.method==='POST')return json(await env.DATA.uploadAsset(identity,id,input.content));
    if(id && action==='schedule' && request.method==='POST')return json(await env.DATA.schedule(identity,id,input.stage,input.startsAt,input.endsAt,input.revision));
    if(id && action==='comment' && request.method==='POST')return json(await env.DATA.comment(identity,id,input.entryId,input.comment,input.revision));
-   if(id && action==='draw-participants' && request.method==='POST')return json(await env.DATA.drawParticipants(identity,id,input.kind,input.count));
+   if(id&&action==='follower-begin'&&request.method==='POST'){
+    if(!env.IDENTITY_HMAC_KEY)throw new Error('팔로워 대조 서버 설정이 필요합니다.');
+    return json(await env.DATA.followerBegin(identity,id,input.exportDate??null,input.previousId??null));
+   }
+   if(id&&action==='follower-chunk'&&request.method==='POST'){
+    if(!env.IDENTITY_HMAC_KEY)throw new Error('팔로워 대조 서버 설정이 필요합니다.');
+    if(!Array.isArray(input.usernames)||input.usernames.length<1||input.usernames.length>500)throw new Error('팔로워 자료 크기나 형식을 확인해주세요.');
+    const context=await env.DATA.followerContext(identity,id,input.uploadId);
+    const hashes=await Promise.all(input.usernames.map((name:unknown)=>hmacSha256Hex(env.IDENTITY_HMAC_KEY,JSON.stringify(['events-v1',id,context.stage_id,context.round,'instagram',normalizeInstagram(name)]))));
+    await env.DATA.followerChunk(identity,id,input.uploadId,input.position,hashes);return json({ok:true});
+   }
+   if(id&&action==='follower-apply'&&request.method==='POST')return json(await env.DATA.followerApply(identity,id,input.uploadId,input.chunks,input.count));
+   if(id && action==='draw-participants' && request.method==='POST')return json(await env.DATA.drawParticipants(identity,id,input.kind,input.count,input.multiplier??1,input.snapshot??null));
    if(id && action==='review-entries' && request.method==='GET')return json(await env.DATA.reviewEntries(identity,id,url.searchParams.get('status')??'all',url.searchParams.get('q')??'',Number(url.searchParams.get('page')??1)));
    if(id && action==='entries' && request.method==='GET') return json(await env.DATA.entries(identity,id));
    if(id && action==='policies' && request.method==='GET') return json(await env.DATA.policies(identity,id));
