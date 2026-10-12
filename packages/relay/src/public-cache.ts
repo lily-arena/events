@@ -4,6 +4,7 @@ export function publicCacheHeaders(ttl:number):Record<string,string> {
 }
 export function publicReadCacheTtl(method:string,path:string,status:number,hasCookie=false):number {
  if(method!=='GET'||status!==200||hasCookie)return 0;
+ if(path==='/api/events/catalog/list')return 15;
  if(/^\/api\/events\/[a-z0-9-]+$/.test(path))return 15;
  if(/^\/api\/events\/[a-z0-9-]+\/state$/.test(path))return 5;
  if(/^\/api\/events\/[a-z0-9-]+\/assets\/[a-f0-9-]+$/.test(path))return 60;

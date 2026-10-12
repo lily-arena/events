@@ -1,3 +1,4 @@
+import {publicCatalog} from './catalog';
 import {recordPageView,readMonitoring} from './monitoring';
 import type {MonitoringPeriod} from '../../../../packages/domain/src/event-monitoring';
 import {checkVote} from './vote-check';
@@ -20,6 +21,7 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
   if (!admin?.active) throw new Error('접근 권한이 없습니다.');
   return new EventsRepository(this.env.DB,admin.id,true);
  }
+ async homeExposure(identity:Identity,id:string,revision:number,active:boolean){return (await this.repository(identity)).homeExposure(id,revision,active);}
  async list(identity: Identity) {return (await this.repository(identity)).list();}
  async get(identity: Identity,id:string) {return (await this.repository(identity)).get(id);}
  async create(identity: Identity,input:unknown) {return (await this.repository(identity)).create(input);}
@@ -65,6 +67,7 @@ export class AdminEventsData extends WorkerEntrypoint<Env> {
 
 }
 export class PublicEventsData extends WorkerEntrypoint<Env> {
+ async catalog(){return publicCatalog(this.env.DB);}
  async pageView(slug:string,visitId:string){return recordPageView(this.env.DB,slug,visitId);}
  async state(slug:string){return this.env.DB.prepare("SELECT e.revision,s.id,s.kind,s.round,s.accepting,s.starts_at,s.ends_at FROM events e JOIN event_stages s ON s.event_id=e.id AND s.id=e.current_stage_id WHERE e.slug=? AND e.visibility='published' AND e.published_json IS NOT NULL").bind(slug).first<{revision:number;id:string;kind:string;round:number;accepting:number;starts_at:number|null;ends_at:number|null}>();}
  async image(slug:string,assetId:string) {

@@ -8,7 +8,7 @@ import { validateDraft, assertPublishable } from '../../../../packages/event-bui
 export interface EventRow {
  id: string; slug: string; title: string; visibility: 'draft'|'published'|'archived';
  draft_json: string; published_json: string|null; revision: number; current_stage_id: string|null;
- created_at: number; updated_at: number; activity_revision: number;
+ home_active: number; created_at: number; updated_at: number; activity_revision: number;
 }
 /** Only authenticated AdminData RPC methods may construct this repository. */
 export class EventsRepository {
@@ -22,9 +22,21 @@ export class EventsRepository {
   if (!await this.statement('SELECT id FROM platform_admins WHERE id=? AND active=1',this.actor).first()) throw new Error('로그인이 필요합니다.');
   this.activeVerified=true;
  }
+ async homeExposure(id:string,expected:number,active:boolean) {
+  const existing=await this.get(id);
+  if(typeof active!=='boolean'||existing.visibility!=='published')throw new Error('공개된 이벤트만 메인 노출을 변경할 수 있습니다.');
+  if(existing.revision!==expected)throw new Error('EDIT_CONFLICT');
+  const guard=crypto.randomUUID();
+  return this.commitEditor(id,expected,[
+   this.statement("UPDATE events SET home_active=?,revision=revision+1,updated_at=? WHERE id=? AND revision=? AND visibility='published'",Number(active),Date.now(),id,expected),
+   this.statement('INSERT INTO event_operation_guards VALUES(?,changes())',guard),
+   this.audit(id,'event.home_exposure',{active}),
+   this.statement('DELETE FROM event_operation_guards WHERE id=?',guard)
+  ]);
+ }
  async list() {
   await this.requireActive();
-  return (await this.statement('SELECT id,slug,title,visibility,revision,current_stage_id,updated_at,draft_json FROM events ORDER BY updated_at DESC LIMIT 200').all()).results;
+  return (await this.statement('SELECT id,slug,title,visibility,home_active,revision,current_stage_id,updated_at,draft_json FROM events ORDER BY updated_at DESC LIMIT 200').all()).results;
  }
  async get(id: string): Promise<EventRow> {
   await this.requireActive();

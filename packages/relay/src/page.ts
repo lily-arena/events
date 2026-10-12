@@ -11,7 +11,7 @@ export async function handlePage(request:Request,env:GatewayEnv,shellHtml:string
  if(!admin&&!landing&&!/^\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(url.pathname))return new Response(null,{status:404});
  let title='서울아레나 이벤트 백오피스',description='서울아레나 이벤트 관리',bootstrap='';
  try{
-  if(landing){title='서울아레나 EVENTS';description='현재 진행 중인 이벤트 바로가기';}
+  if(landing){title='서울아레나 EVENTS';description='서울아레나의 진행 중인 이벤트와 지난 이벤트를 확인하세요.';}
   if(!admin&&!landing){const view=await handleGateway(new Request(new URL('/api/events'+url.pathname,env.PUBLIC_ORIGIN)),env);if(!view.ok)return new Response('공개된 이벤트를 찾을 수 없습니다.',{status:view.status===404?404:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});const payload=await view.json() as {event:{title:string;browserTitle?:string;description?:string}};const {event}=payload;bootstrap=JSON.stringify(payload).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');title=event.browserTitle?.trim()||`서울아레나 ${event.title}`;description=event.description??'';}
   const shell=admin?shellHtml:shellHtml.replace('<html','<html data-event-surface="dark"').replace('</head>','<meta name="theme-color" content="#000000"/><style>html[data-event-surface="dark"],html[data-event-surface="dark"] body{background:#000;}</style></head>');
   const html=pageMetadata(shell,title,description,new URL(url.pathname,env.PUBLIC_ORIGIN).href).replace('</body>',(admin||landing?'':`<script type="application/json" id="event-bootstrap">${bootstrap}</script>`)+'</body>');

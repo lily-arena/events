@@ -215,7 +215,7 @@
 .event-table-head,
 .event-table-row {
   display: grid;
-  grid-template-columns: minmax(240px, 2.4fr) 1fr 0.8fr 0.8fr 60px;
+  grid-template-columns: minmax(240px, 2.4fr) 0.8fr 0.5fr minmax(110px, 0.9fr) 0.9fr 60px;
   gap: 12px;
   align-items: center;
 }
@@ -702,9 +702,9 @@
   }
   .event-table-head,
   .event-table-row {
-    grid-template-columns: minmax(180px, 2fr) 1fr 0.8fr 60px;
+    grid-template-columns: minmax(180px, 2fr) 0.8fr 0.5fr minmax(110px, 0.9fr) 60px;
   }
-  .event-table-head > span:nth-child(4) {
+  .event-table-head > span:nth-child(5) {
     display: none;
   }
   .editor-stepbar > .muted {
@@ -1145,3 +1145,10 @@
 .follower-dropzone{margin:24px 0;padding:22px 16px;border:2px dashed #bbb;border-radius:10px;text-align:left}.follower-dropzone.is-dragging{border-color:#191919;background:#f0f0f0}.follower-dropzone input{max-width:100%;width:100%;min-width:0}.follower-upload details ol{padding-left:24px;color:#666;line-height:1.7}.follower-upload .follower-error{color:#b91c1c}.follower-upload h3{word-break:keep-all}
 
 .follower-weight-control{display:flex;align-items:center;gap:8px;white-space:nowrap}.follower-weight-control input{width:120px;min-width:0}.participant-draw .row{flex-wrap:wrap}
+
+/* Reuse the dashboard's status badges and small action buttons. */
+.home-exposure-control{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.home-exposure-control select{width:128px;max-width:100%;min-height:34px;border:1px solid var(--line);border-radius:var(--radius);background-color:var(--paper);color:var(--ink);font-family:inherit;font-size:12px;font-weight:600;padding:7px 10px;cursor:pointer}.home-exposure-control select:disabled{opacity:.5;cursor:wait}
+.home-exposure-control small,.home-mobile-label{color:#666}
+.home-mobile-label{display:none;font-size:11px}
+@media(max-width:900px){.event-table-row>.event-public-status{grid-column:1 / -1}.event-table-row>.home-exposure-control{grid-column:1 / -1;flex-direction:row;align-items:center;flex-wrap:wrap}.home-mobile-label{display:inline}}

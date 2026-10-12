@@ -104,6 +104,7 @@ function readDrafts(): EventDraft[] {
 }
 export interface EditorStorage {
  initialEvents: EventDraft[];
+ setHomeActive?:(event:EventDraft,active:boolean)=>Promise<EventDraft>;
  checkRevision?:(id:string)=>Promise<{revision:number}|null>;
  load?:(id:string)=>Promise<EventDraft>;
  publish?:(draft:EventDraft)=>Promise<EventDraft>;
@@ -130,6 +131,13 @@ export default function AdminPreview({ storage, initialOperationSection }: {stor
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [search, setSearch] = useState("");
+  const [homeBusy,setHomeBusy]=useState<string|null>(null);
+  async function toggleHome(e:EventDraft){
+   setHomeBusy(e.id);
+   try{const next=storage?.setHomeActive?await storage.setHomeActive(e,!e.homeActive):{...e,homeActive:!e.homeActive};setEvents(previous=>previous.map(item=>item.id===next.id?next:item));setNoticeTone('success');setMessage('메인 노출 설정을 변경했습니다. 공개 화면에는 최대 15초 후 반영됩니다.');}
+   catch(error){setNoticeTone('error');setMessage(error instanceof Error?error.message:'변경하지 못했습니다.');}
+   finally{setHomeBusy(null);}
+  }
   const [filter, setFilter] = useState("all");
   const [noticeTone,setNoticeTone]=useState<AdminTone>('info');
   const [message, setMessage] = useState("");
@@ -330,6 +338,7 @@ export default function AdminPreview({ storage, initialOperationSection }: {stor
                   <span>이벤트</span>
                   <span>구성</span>
                   <span>상태</span>
+                  <span>메인 노출</span>
                   <span>마지막 저장</span>
                   <span />
                 </div>
@@ -352,13 +361,14 @@ export default function AdminPreview({ storage, initialOperationSection }: {stor
                     <span className="table-template">
                       {templates.find((t) => t.id === e.template)?.title}
                     </span>
-                    <span>
+                    <div className="event-public-status">
                       <span
                         className={`tag ${e.visibility === "published" ? "dark" : ""}`}
                       >
                         {e.visibility === "published" ? "공개" : e.visibility === "archived" ? "보관" : "작성 중"}
                       </span>
-                    </span>
+                    </div>
+                    <div className="home-exposure-control">{e.visibility==='published'?<><span className="home-mobile-label">메인 노출</span><select aria-label={`${e.title} 메인 노출`} value={e.homeActive?'active':'past'} disabled={homeBusy!==null} onChange={event=>{if((event.target.value==='active')!==Boolean(e.homeActive))void toggleHome(e);}}><option value="past">지난 이벤트</option><option value="active">진행 중</option></select></>:<small>노출 안 함</small>}</div>
                     <span className="muted table-updated">{e.updatedAt}</span>
                     <Button kind="small" onClick={() => openEditor(e)}>
                       편집

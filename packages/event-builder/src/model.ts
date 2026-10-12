@@ -38,6 +38,7 @@ export interface PageModule {
   body: string;
 }
 export interface EventDraft {
+  homeActive?: boolean;
   browserTitle?: string;
   /** Client-only version paired with this exact loaded draft; never persisted. */
   editorRevision?: number;

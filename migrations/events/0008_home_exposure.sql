@@ -1,0 +1,1 @@
+ALTER TABLE events ADD COLUMN home_active INTEGER NOT NULL DEFAULT 0 CHECK(home_active IN (0,1));
