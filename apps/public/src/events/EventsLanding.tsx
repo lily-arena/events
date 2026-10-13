@@ -14,5 +14,12 @@ export default function EventsLanding(){
     {past.length>0&&<section className="past-events" aria-labelledby="past-heading"><h4 id="past-heading">지난 이벤트</h4>{links(past)}</section>}
    </>}
   </div>
+  <footer className="events-social-footer">
+   <h4>새로운 이벤트 소식을 먼저 만나보세요</h4>
+   <a href="https://www.instagram.com/seoularena.official/" target="_blank" rel="noopener noreferrer" aria-label="서울아레나 인스타그램 (새 창)">
+    <span className="instagram-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle className="instagram-dot" cx="17.5" cy="6.5" r="1"/></svg></span>
+    <span>서울아레나 인스타그램</span>
+   </a>
+  </footer>
  </main>;
 }
