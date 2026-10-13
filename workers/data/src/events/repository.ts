@@ -1,3 +1,4 @@
+import {refreshEventPeriod} from './period';
 import {Followers,followJoins,followStatus} from './followers';
 import {weightedDraw} from '../../../../packages/domain/src/follower-draw';
 import {encodePolicy,consentItems,decodePolicy} from '../../../../packages/event-builder/src/consents';
@@ -8,7 +9,7 @@ import { validateDraft, assertPublishable } from '../../../../packages/event-bui
 export interface EventRow {
  id: string; slug: string; title: string; visibility: 'draft'|'published'|'archived';
  draft_json: string; published_json: string|null; revision: number; current_stage_id: string|null;
- home_active: number; created_at: number; updated_at: number; activity_revision: number;
+ started_at?:number|null; ended_at?:number|null; home_active: number; created_at: number; updated_at: number; activity_revision: number;
 }
 /** Only authenticated AdminData RPC methods may construct this repository. */
 export class EventsRepository {
@@ -36,12 +37,13 @@ export class EventsRepository {
  }
  async list() {
   await this.requireActive();
-  return (await this.statement('SELECT id,slug,title,visibility,home_active,revision,current_stage_id,updated_at,draft_json FROM events ORDER BY updated_at DESC LIMIT 200').all()).results;
+  return (await this.statement('SELECT id,slug,title,visibility,home_active,started_at,ended_at,revision,current_stage_id,updated_at,draft_json FROM events ORDER BY updated_at DESC LIMIT 200').all()).results;
  }
  async get(id: string): Promise<EventRow> {
   await this.requireActive();
   const row = await this.statement('SELECT e.*,(SELECT accepting FROM event_stages WHERE event_id=e.id AND id=e.current_stage_id) AS accepting FROM events e WHERE e.id=?',id).first<EventRow>();
   if (!row) throw new Error('이벤트를 찾을 수 없습니다.');
+  if('started_at' in row){const period=await refreshEventPeriod(this.db,id);row.started_at=period.startedAt;row.ended_at=period.endedAt;}
   return row;
  }
  async create(input: unknown, sourceId?:string) {

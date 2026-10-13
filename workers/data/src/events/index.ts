@@ -1,3 +1,4 @@
+import {refreshEventPeriods} from './period';
 import {publicCatalog} from './catalog';
 import {recordPageView,readMonitoring} from './monitoring';
 import type {MonitoringPeriod} from '../../../../packages/domain/src/event-monitoring';
@@ -90,4 +91,4 @@ export class PublicEventsData extends WorkerEntrypoint<Env> {
   return {event:published,stage,policies,candidates,result,revision:row.revision};
  }
 }
-export default {async scheduled(_event:ScheduledController,env:Env){await purgeExpired(env.DB);},fetch() { return new Response(null,{status:404}); }};
+export default {async scheduled(_event:ScheduledController,env:Env){await purgeExpired(env.DB);await refreshEventPeriods(env.DB);},fetch() { return new Response(null,{status:404}); }};
