@@ -1,0 +1,12 @@
+{
+  "recipient": "jinsansung",
+  "code_repository": "lily-arena/events",
+  "code_permission": "read verified via GitHub API; repository public",
+  "data_repository": "lily-arena/kakao-arena-teaser",
+  "data_repository_private": true,
+  "invitation_id": 345921348,
+  "invitation_url": "https://github.com/lily-arena/kakao-arena-teaser/invitations",
+  "recipient_download_verification": "not performed: invitation not yet accepted and no recipient session",
+  "owner_can_administer_both_repositories": true,
+  "permission_changes": "Only requested jinsansung invitation to teaser; no DNS, deployment or Google SSO changes"
+}

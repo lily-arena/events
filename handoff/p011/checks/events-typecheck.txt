@@ -1,0 +1,8 @@
+
+> seoul-arena-events@0.1.0 typecheck
+> npm run check:events
+
+
+> seoul-arena-events@0.1.0 check:events
+> tsc -p config/tsconfig.preview.json && tsc -p workers/data/tsconfig.events.json && tsc -p config/tsconfig.vercel.json
+

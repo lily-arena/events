@@ -1,0 +1,24 @@
+
+> seoul-arena-events@0.1.0 test:events
+> vitest run --config config/vitest.config.ts tests/unit/events-*.test.ts && python3 tests/platform/schema.py
+
+
+ RUN  v5.0.0 <WORKSPACE>/p011-events
+
+
+ Test Files  24 passed (24)
+      Tests  85 passed (85)
+   Start at  15:24:50
+   Duration  819ms (transform 41%, tests 29%, import 23%, worker 6%)
+
+test_cross_event_candidate_source_rejected (__main__.Isolation) ... ok
+test_cross_event_consent_rejected (__main__.Isolation) ... ok
+test_event_current_stage_cannot_reference_another_event (__main__.Isolation) ... ok
+test_policies_and_audit_preserved (__main__.Isolation) ... ok
+test_stage_change_blocks_entry_on_server (__main__.Isolation) ... ok
+test_votes_need_confirmed_candidate_and_open_stage (__main__.Isolation) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.011s
+
+OK

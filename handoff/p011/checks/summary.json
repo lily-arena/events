@@ -1,0 +1,16 @@
+{
+  "environment": "fresh isolated Git worktree at manifest source_commit_sha, no reused node_modules, npm ci",
+  "node": "24.19.0",
+  "install": "passed",
+  "build": "passed",
+  "frontend_tests": 174,
+  "content_tests": null,
+  "schema_python_tests": 6,
+  "typecheck": "passed",
+  "admin_isolated_flow": "not run; requires local Workers and synthetic runtime keys",
+  "production_mutations": false,
+  "actual_google_login_test": "not run; existing SSO untouched",
+  "initial_restore_findings": [
+    "Raw Events export needs schema-first ordering and chunked long string SQL in D1; portable restore supplied and verified."
+  ]
+}

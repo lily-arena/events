@@ -1,0 +1,111 @@
+{
+  "source": "production D1 SQL export restored to isolated local SQLite",
+  "tables": {
+    "d1_migrations": 9,
+    "event_assets": 5,
+    "event_audit": 2486,
+    "event_candidates": 5,
+    "event_consents": 3553,
+    "event_entries": 508,
+    "event_follower_chunks": 2,
+    "event_follower_imports": 1,
+    "event_follower_members": 928,
+    "event_identity_claims": 2595,
+    "event_monitoring_state": 1,
+    "event_operation_guards": 0,
+    "event_pageview_receipts": 1,
+    "event_pageviews": 1075,
+    "event_participants": 1521,
+    "event_policies": 25,
+    "event_rate_limits": 0,
+    "event_requests": 0,
+    "event_reset_tokens": 0,
+    "event_results": 1,
+    "event_stages": 3,
+    "event_vote_identities": 2595,
+    "event_votes": 1013,
+    "events": 1,
+    "platform_admins": 5,
+    "platform_sessions": 0,
+    "stage_policies": 6
+  },
+  "integrity_check": [
+    [
+      "ok"
+    ]
+  ],
+  "foreign_key_violations_count": 0,
+  "scope": "all exported tables, including audit, versions, consent records and transient authentication state; raw data private/encrypted only",
+  "sessions": "Do not activate restored admin sessions or OAuth attempts in target; invalidate on isolated target before launch.",
+  "migrations": [
+    [
+      "0001_platform.sql"
+    ],
+    [
+      "0002_assets.sql"
+    ],
+    [
+      "0003_first_seat.sql"
+    ],
+    [
+      "0004_event_deletion.sql"
+    ],
+    [
+      "0005_review_comments.sql"
+    ],
+    [
+      "0006_monitoring.sql"
+    ],
+    [
+      "0007_followers.sql"
+    ],
+    [
+      "0008_home_exposure.sql"
+    ],
+    [
+      "0009_event_period.sql"
+    ]
+  ],
+  "export": {
+    "filename": "events-d1.sql",
+    "bytes": 5890049,
+    "sha256": "988566e6aecbf3b29d77fe86cb9776126f30fd8836a55a7e39f7250505874402"
+  },
+  "table_data_sha256": {
+    "d1_migrations": "f42250fa514f7f76257dbfb89bbf3fce735fbbe1de9e5bd62eaba1e511886d3a",
+    "event_assets": "866bbd70e854e6b726b0c135adcfcb06784b9450b7e87e5de6067545313de236",
+    "event_audit": "1d3e7637528f475f5514af92a0e770ebf197946c2f766232b8ac9787e3aee8ed",
+    "event_candidates": "1d30265c4a99e563233a26cfc5092d6a69c5fa8757fbd8ce3a7671ecedf752e1",
+    "event_consents": "d7d0ae3d42b2cf30f7b8e85290ebf187d925af958445f318d0114e78563cae98",
+    "event_entries": "83f2ec9c18fb02b658dd89f32dc5375dccfbf4c22b710ccfaef50042a46cc62f",
+    "event_follower_chunks": "ee4194cd19d35611154dd899db5c4068e78f55f80c122f37483b88e0a07ccc67",
+    "event_follower_imports": "de34b7b0e70074df4cd1d8d290d0cf77a0bda51c864f1ce2dfa5b5e02465d4ad",
+    "event_follower_members": "57b1b640be70fcd7eb60c106acbbcf1b25f786fbab99be75571c36353cb2948c",
+    "event_identity_claims": "d5ad399f01a5b2bf0473f8c7fa33d6daf67302b3204362c12a0ec378328f1d05",
+    "event_monitoring_state": "1334160049f0c9e3820556e8706b56f710d8119d3140d223c7825348401af47f",
+    "event_operation_guards": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "event_pageview_receipts": "09712ff97a74863f10ba3d372e0b1729feccd645011fe61cbac4fec3367bd728",
+    "event_pageviews": "56f40d8819f23fe67f43c75769ccb93cc67671f54af7119d92b97880d4ec140b",
+    "event_participants": "883b049e82fdb1281b8d7f58ca35cb03d4e552523358742ef7fa317060b8ad24",
+    "event_policies": "578b3179ea33f4ec9eabc92f01043309cbe7b762f5e00ff4a7a07c4283e77839",
+    "event_rate_limits": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "event_requests": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "event_reset_tokens": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "event_results": "6028d14b14ee20da5986ec031dcfe50444edd6422c26ba646cf709cfb655ef96",
+    "event_stages": "e124f891879dee5563fd9491b14bd5044fe0f46501d2f94bdd20e35a315c7aa0",
+    "event_vote_identities": "eea499c0df259c2a88df4338e0fd38b3f486db29588252eb8fc3215af0c2b2be",
+    "event_votes": "f762cbb6bb47f9a867ac806a76f370197da40bf51b62ab991666255fd0208858",
+    "events": "e3fa34398b1dc07595b1cc87e307a38717a75f529cbadfe458ca0bb1a608b2b0",
+    "platform_admins": "6ae36fa7e0b79f81ac16e5a8a214b3c8c289681db3b87a277d15b88814f59198",
+    "platform_sessions": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "stage_policies": "e1f8cdee52d2e0c37f62ed305e68b1dd8f8883f9a428a2f22e5cd10aa81c35a4"
+  },
+  "portable_restore": {
+    "filename": "events-restore.sql",
+    "bytes": 4780119,
+    "sha256": "1a6549850320c842db89f0233df772962e9c3997d2258715a8cc021085b2e597"
+  },
+  "inventory_generated_utc": "2026-11-24T06:22:50.063804+00:00",
+  "export_file_written_utc": "2026-11-24T06:21:07.171009+00:00",
+  "consistency_note": "Each D1 export is a separate snapshot. Cross-service write-freeze/cutover was not requested or performed. Later writes require a fresh final export before cutover."
+}

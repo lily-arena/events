@@ -1,0 +1,178 @@
+{
+  "passed": true,
+  "integrity_check": [
+    [
+      "ok"
+    ]
+  ],
+  "foreign_key_violations_count": 0,
+  "tables": {
+    "d1_migrations": {
+      "count": 9,
+      "count_matches": true,
+      "data_sha256": "f42250fa514f7f76257dbfb89bbf3fce735fbbe1de9e5bd62eaba1e511886d3a",
+      "data_matches": true
+    },
+    "event_assets": {
+      "count": 5,
+      "count_matches": true,
+      "data_sha256": "866bbd70e854e6b726b0c135adcfcb06784b9450b7e87e5de6067545313de236",
+      "data_matches": true
+    },
+    "event_audit": {
+      "count": 2486,
+      "count_matches": true,
+      "data_sha256": "1d3e7637528f475f5514af92a0e770ebf197946c2f766232b8ac9787e3aee8ed",
+      "data_matches": true
+    },
+    "event_candidates": {
+      "count": 5,
+      "count_matches": true,
+      "data_sha256": "1d30265c4a99e563233a26cfc5092d6a69c5fa8757fbd8ce3a7671ecedf752e1",
+      "data_matches": true
+    },
+    "event_consents": {
+      "count": 3553,
+      "count_matches": true,
+      "data_sha256": "d7d0ae3d42b2cf30f7b8e85290ebf187d925af958445f318d0114e78563cae98",
+      "data_matches": true
+    },
+    "event_entries": {
+      "count": 508,
+      "count_matches": true,
+      "data_sha256": "83f2ec9c18fb02b658dd89f32dc5375dccfbf4c22b710ccfaef50042a46cc62f",
+      "data_matches": true
+    },
+    "event_follower_chunks": {
+      "count": 2,
+      "count_matches": true,
+      "data_sha256": "ee4194cd19d35611154dd899db5c4068e78f55f80c122f37483b88e0a07ccc67",
+      "data_matches": true
+    },
+    "event_follower_imports": {
+      "count": 1,
+      "count_matches": true,
+      "data_sha256": "de34b7b0e70074df4cd1d8d290d0cf77a0bda51c864f1ce2dfa5b5e02465d4ad",
+      "data_matches": true
+    },
+    "event_follower_members": {
+      "count": 928,
+      "count_matches": true,
+      "data_sha256": "57b1b640be70fcd7eb60c106acbbcf1b25f786fbab99be75571c36353cb2948c",
+      "data_matches": true
+    },
+    "event_identity_claims": {
+      "count": 2595,
+      "count_matches": true,
+      "data_sha256": "d5ad399f01a5b2bf0473f8c7fa33d6daf67302b3204362c12a0ec378328f1d05",
+      "data_matches": true
+    },
+    "event_monitoring_state": {
+      "count": 1,
+      "count_matches": true,
+      "data_sha256": "1334160049f0c9e3820556e8706b56f710d8119d3140d223c7825348401af47f",
+      "data_matches": true
+    },
+    "event_operation_guards": {
+      "count": 0,
+      "count_matches": true,
+      "data_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "data_matches": true
+    },
+    "event_pageview_receipts": {
+      "count": 1,
+      "count_matches": true,
+      "data_sha256": "09712ff97a74863f10ba3d372e0b1729feccd645011fe61cbac4fec3367bd728",
+      "data_matches": true
+    },
+    "event_pageviews": {
+      "count": 1075,
+      "count_matches": true,
+      "data_sha256": "56f40d8819f23fe67f43c75769ccb93cc67671f54af7119d92b97880d4ec140b",
+      "data_matches": true
+    },
+    "event_participants": {
+      "count": 1521,
+      "count_matches": true,
+      "data_sha256": "883b049e82fdb1281b8d7f58ca35cb03d4e552523358742ef7fa317060b8ad24",
+      "data_matches": true
+    },
+    "event_policies": {
+      "count": 25,
+      "count_matches": true,
+      "data_sha256": "578b3179ea33f4ec9eabc92f01043309cbe7b762f5e00ff4a7a07c4283e77839",
+      "data_matches": true
+    },
+    "event_rate_limits": {
+      "count": 0,
+      "count_matches": true,
+      "data_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "data_matches": true
+    },
+    "event_requests": {
+      "count": 0,
+      "count_matches": true,
+      "data_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "data_matches": true
+    },
+    "event_reset_tokens": {
+      "count": 0,
+      "count_matches": true,
+      "data_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "data_matches": true
+    },
+    "event_results": {
+      "count": 1,
+      "count_matches": true,
+      "data_sha256": "6028d14b14ee20da5986ec031dcfe50444edd6422c26ba646cf709cfb655ef96",
+      "data_matches": true
+    },
+    "event_stages": {
+      "count": 3,
+      "count_matches": true,
+      "data_sha256": "e124f891879dee5563fd9491b14bd5044fe0f46501d2f94bdd20e35a315c7aa0",
+      "data_matches": true
+    },
+    "event_vote_identities": {
+      "count": 2595,
+      "count_matches": true,
+      "data_sha256": "eea499c0df259c2a88df4338e0fd38b3f486db29588252eb8fc3215af0c2b2be",
+      "data_matches": true
+    },
+    "event_votes": {
+      "count": 1013,
+      "count_matches": true,
+      "data_sha256": "f762cbb6bb47f9a867ac806a76f370197da40bf51b62ab991666255fd0208858",
+      "data_matches": true
+    },
+    "events": {
+      "count": 1,
+      "count_matches": true,
+      "data_sha256": "e3fa34398b1dc07595b1cc87e307a38717a75f529cbadfe458ca0bb1a608b2b0",
+      "data_matches": true
+    },
+    "platform_admins": {
+      "count": 5,
+      "count_matches": true,
+      "data_sha256": "6ae36fa7e0b79f81ac16e5a8a214b3c8c289681db3b87a277d15b88814f59198",
+      "data_matches": true
+    },
+    "platform_sessions": {
+      "count": 0,
+      "count_matches": true,
+      "data_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "data_matches": true
+    },
+    "stage_policies": {
+      "count": 6,
+      "count_matches": true,
+      "data_sha256": "e1f8cdee52d2e0c37f62ed305e68b1dd8f8883f9a428a2f22e5cd10aa81c35a4",
+      "data_matches": true
+    }
+  },
+  "method": "Cloudflare Wrangler local D1 isolated restore, plus independent Python SQLite restore",
+  "production_writes": false,
+  "raw_export_preserved": true,
+  "portable_sql_sha256": "1a6549850320c842db89f0233df772962e9c3997d2258715a8cc021085b2e597",
+  "sqlite_portable_restore_passed": true
+}

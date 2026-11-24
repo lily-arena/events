@@ -1,0 +1,16 @@
+
+> seoul-arena-events@0.1.0 test
+> vitest run --config config/vitest.config.ts
+
+
+ RUN  v5.0.0 <WORKSPACE>/p011-events
+
+
+ Test Files  41 passed (41)
+      Tests  174 passed (174)
+   Start at  15:21:42
+   Duration  904ms (transform 41%, tests 35%, import 19%, worker 4%)
+
+    Isolate  41 workers spawned · ~96ms startup each (spawn + environment, per file)
+             at least ~340ms faster with isolate: false — reuses workers across files instead of one per file
+

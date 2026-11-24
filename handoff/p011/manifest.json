@@ -1,0 +1,243 @@
+{
+  "handoff_date": "2026-11-24",
+  "repository": "https://github.com/lily-arena/events",
+  "handoff_branch": "handoff/p011-20261124",
+  "source_commit_sha": "59f10a5188592465645ba32d14e93c22f36960ce",
+  "handoff_commit_sha": "Resolve with git rev-parse HEAD after checkout; final links supplied separately to avoid self-referential commit hash.",
+  "runtime": {
+    "node": "24.19.0",
+    "install": "npm ci"
+  },
+  "vercel": {
+    "team": "seoul-arena",
+    "project": "seoularena-events",
+    "project_id": "prj_DUDO44qmR2cqIR6HyjoK0etiRlj7",
+    "deployment_id": "dpl_5bb1w5bPiPbuXGLEcPxYPTc9BTPb",
+    "state": "READY",
+    "target": "production",
+    "git_commit_sha": "59f10a5188592465645ba32d14e93c22f36960ce",
+    "url": "https://events.seoularena.net",
+    "git_commit_matches_source": true,
+    "configuration_file": "vercel.json"
+  },
+  "cloudflare": {
+    "account_id": "e77a3df8e80ed1973f30841c6fa0763b",
+    "workers": {
+      "seoularena-events-data": {
+        "current_deployment": {
+          "id": "6cad686a-1a51-4ccd-82f4-ca4e8ca836b0",
+          "created_on": "2026-10-13T06:25:49.776748Z",
+          "versions": [
+            {
+              "version_id": "4878f13e-4cb0-430b-9730-eff81cd812ba",
+              "percentage": 100
+            }
+          ],
+          "source": "wrangler"
+        },
+        "git_sha": null,
+        "git_sha_note": "Cloudflare API does not record a source Git SHA for these CLI deployments; not inferred. Exact deployed code is included as multipart snapshot in private archive.",
+        "code_snapshot": {
+          "worker": "seoularena-events-data",
+          "bytes": 110037,
+          "content_type": "multipart/form-data; boundary=5f9877c87cf32deb045b0a71fb10bd32f62d2097bbc7b0dc687802b393f0",
+          "sha256": "130c101bf848bc5dc879e99db717033af9623d0c0d328a981abc14d5d3bd8693"
+        },
+        "verified_active_runtime": {
+          "main_module": [
+            "scheduled",
+            "fetch"
+          ],
+          "bindings": [
+            {
+              "id": "88de451a-a805-46be-b58c-486ec95c1ee7",
+              "name": "DB",
+              "type": "d1"
+            },
+            {
+              "name": "ENVIRONMENT",
+              "type": "plain_text"
+            }
+          ]
+        }
+      },
+      "seoularena-events-admin": {
+        "current_deployment": {
+          "id": "08ed4c44-8431-44f1-bcfc-34aef36f74da",
+          "created_on": "2026-10-12T07:02:59.540796Z",
+          "versions": [
+            {
+              "version_id": "ec0254a6-3893-4a47-ae88-90dc8e628c67",
+              "percentage": 100
+            }
+          ],
+          "source": "wrangler"
+        },
+        "git_sha": null,
+        "git_sha_note": "Cloudflare API does not record a source Git SHA for these CLI deployments; not inferred. Exact deployed code is included as multipart snapshot in private archive.",
+        "code_snapshot": {
+          "worker": "seoularena-events-admin",
+          "bytes": 24673,
+          "content_type": "multipart/form-data; boundary=709ec15d98cc78d3b9bf479a5a0eb1512652e4b84a2838a753df3f875ad8",
+          "sha256": "8d85e68c9d87697256d8e93e343bf907123036689455b5a6c38e3cab4b14297e"
+        },
+        "verified_active_runtime": {
+          "main_module": [
+            "fetch"
+          ],
+          "bindings": [
+            {
+              "entrypoint": "AdminEventsData",
+              "environment": "production",
+              "name": "DATA",
+              "service": "seoularena-events-data",
+              "type": "service"
+            },
+            {
+              "name": "ENVIRONMENT",
+              "type": "plain_text"
+            },
+            {
+              "name": "GATEWAY_SECRET",
+              "type": "secret_text"
+            },
+            {
+              "name": "IDENTITY_HMAC_KEY",
+              "type": "secret_text"
+            },
+            {
+              "name": "PII_PRIVATE_KEY",
+              "type": "secret_text"
+            }
+          ]
+        }
+      },
+      "seoularena-events-public": {
+        "current_deployment": {
+          "id": "c09b1f0b-0673-4e7e-858d-dc00a5e4787d",
+          "created_on": "2026-10-12T07:03:05.397501Z",
+          "versions": [
+            {
+              "version_id": "c3f4d530-6d93-482e-aac5-01851755643c",
+              "percentage": 100
+            }
+          ],
+          "source": "wrangler"
+        },
+        "git_sha": null,
+        "git_sha_note": "Cloudflare API does not record a source Git SHA for these CLI deployments; not inferred. Exact deployed code is included as multipart snapshot in private archive.",
+        "code_snapshot": {
+          "worker": "seoularena-events-public",
+          "bytes": 28749,
+          "content_type": "multipart/form-data; boundary=9809418fb33d494998e8bdc3baf07af748a870bb13b0695eff1ad4584982",
+          "sha256": "f5b1f239d2284f8b7b48112ed4fdfa2c7fc282c0b447b5d4d9e33d17f794f9dd"
+        },
+        "verified_active_runtime": {
+          "main_module": [
+            "fetch"
+          ],
+          "bindings": [
+            {
+              "entrypoint": "PublicEventsData",
+              "environment": "production",
+              "name": "DATA",
+              "service": "seoularena-events-data",
+              "type": "service"
+            },
+            {
+              "name": "ENVIRONMENT",
+              "type": "plain_text"
+            },
+            {
+              "name": "GATEWAY_SECRET",
+              "type": "secret_text"
+            },
+            {
+              "name": "IDENTITY_HMAC_KEY",
+              "type": "secret_text"
+            },
+            {
+              "name": "PII_KEY_VERSION",
+              "type": "plain_text"
+            },
+            {
+              "name": "PII_PUBLIC_KEY",
+              "type": "secret_text"
+            },
+            {
+              "name": "TURNSTILE_SECRET",
+              "type": "secret_text"
+            },
+            {
+              "name": "TURNSTILE_SITE_KEY",
+              "type": "plain_text"
+            }
+          ]
+        }
+      }
+    },
+    "D1": {
+      "binding": "DB",
+      "name": "seoularena-events",
+      "id": "88de451a-a805-46be-b58c-486ec95c1ee7"
+    },
+    "R2": null
+  },
+  "migrations": [
+    {
+      "path": "migrations/events/0001_platform.sql",
+      "sha256": "140db93a97e528fea249a82142fff319a201d144e9021bbee93e92d399849c5b"
+    },
+    {
+      "path": "migrations/events/0002_assets.sql",
+      "sha256": "32dd634a3418afd552aefa651f0a2865c8882ff2ba10d6c62e6e0ef5e262ecdd"
+    },
+    {
+      "path": "migrations/events/0003_first_seat.sql",
+      "sha256": "04e3b9bde5c7e30e136498b62beacea45fa1e58786bdb2cba89b93611adbcc67"
+    },
+    {
+      "path": "migrations/events/0004_event_deletion.sql",
+      "sha256": "c9afb93cbea0637e6d942c6cddd37da6a04b594d6b9f81021b9df726fcdb407a"
+    },
+    {
+      "path": "migrations/events/0005_review_comments.sql",
+      "sha256": "ea64510450b5ccaaee593d0cba645b5301ad27f617168f086dc49c51a870670d"
+    },
+    {
+      "path": "migrations/events/0006_monitoring.sql",
+      "sha256": "051b84600e2db6813415d31ba5e08801d74e1210dc0b4f807f8d29deeff2f4cb"
+    },
+    {
+      "path": "migrations/events/0007_followers.sql",
+      "sha256": "2d7a7567ba6c0c97e14b23f8317efe51bdba4f36cd430e3cb0845bdff2aed2cc"
+    },
+    {
+      "path": "migrations/events/0008_home_exposure.sql",
+      "sha256": "61d812a3a24b558f5f7bb9e2cbd2abdbaca66f25e470378c5e4db1fd5f12828b"
+    },
+    {
+      "path": "migrations/events/0009_event_period.sql",
+      "sha256": "07ee5c8bdb892ec665ef515a202cd763968b614a0be220e1f9958795f5f41d49"
+    }
+  ],
+  "data_delivery": "Both archives hosted only in private lily-arena/kakao-arena-teaser release; never in public events Git repository. See delivery.json.",
+  "external_dependencies": [
+    "GitHub",
+    "npm registry",
+    "Vercel",
+    "Cloudflare D1",
+    "Google OAuth / JWKS",
+    "Cloudflare Turnstile",
+    "Cloudflare Worker service bindings",
+    "15-minute scheduled data maintenance"
+  ],
+  "production_changes_performed": false,
+  "protected_systems": [
+    "existing D1 data",
+    "existing R2 originals",
+    "production deployments",
+    "DNS",
+    "dev.kakaoarena-seoul.com company Google SSO"
+  ]
+}

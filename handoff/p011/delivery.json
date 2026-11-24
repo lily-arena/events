@@ -1,0 +1,78 @@
+{
+  "release_repository": "lily-arena/kakao-arena-teaser",
+  "repository_private": true,
+  "release_tag": "p011-20261124-data",
+  "release_url": "https://github.com/lily-arena/kakao-arena-teaser/releases/tag/p011-20261124-data",
+  "archive": {
+    "name": "events-p011-20261124.tar.gz",
+    "bytes": 4385446,
+    "sha256": "a163902f6b0d96968e11721a20cc48e3bcc40c8ae3203ee680a0fb9bd99effa4",
+    "download_url": "https://github.com/lily-arena/kakao-arena-teaser/releases/download/p011-20261124-data/events-p011-20261124.tar.gz"
+  },
+  "files": [
+    {
+      "path": "events-d1.sql",
+      "bytes": 5890049,
+      "sha256": "988566e6aecbf3b29d77fe86cb9776126f30fd8836a55a7e39f7250505874402"
+    },
+    {
+      "path": "events-restore.sql",
+      "bytes": 4780119,
+      "sha256": "1a6549850320c842db89f0233df772962e9c3997d2258715a8cc021085b2e597"
+    },
+    {
+      "path": "events-assets/20ae65e4d1c39effcf6cf2ad7c359363260d8b65ccaeca28384da9299edd91ad.webp",
+      "bytes": 56332,
+      "sha256": "5e30589ce0f0b15844170e6f64f9e396fd32aae01b449e6cf2460e720abb8d7e"
+    },
+    {
+      "path": "events-assets/34751fc33686b8d3491c15aa53e60f33de802a485a8d91a8867593c6fdc6080e.webp",
+      "bytes": 56996,
+      "sha256": "69a81a7d626f387e26d9a71039fdd9cb02208a2bf33050d3353bbac4a95979ed"
+    },
+    {
+      "path": "events-assets/7cfd1db8b4f4ae8b73cd969d991e2853508274b0791bd0882f3d8e7fc014db15.webp",
+      "bytes": 56996,
+      "sha256": "69a81a7d626f387e26d9a71039fdd9cb02208a2bf33050d3353bbac4a95979ed"
+    },
+    {
+      "path": "events-assets/99db824b013a624b0451f303e937f555e6776086767f374104cdec67acc27539.webp",
+      "bytes": 158700,
+      "sha256": "e55011389d31554659fa580f38e34fa0549a173ac4a8ceb4c391cb4162984974"
+    },
+    {
+      "path": "events-assets/f06b0de89fbda73cdd05edc9e184c0909b4e59865aad9f330108d338628be4e9.webp",
+      "bytes": 56996,
+      "sha256": "69a81a7d626f387e26d9a71039fdd9cb02208a2bf33050d3353bbac4a95979ed"
+    },
+    {
+      "path": "deployed-workers/seoularena-events-data.multipart",
+      "bytes": 110037,
+      "sha256": "130c101bf848bc5dc879e99db717033af9623d0c0d328a981abc14d5d3bd8693"
+    },
+    {
+      "path": "deployed-workers/seoularena-events-admin.multipart",
+      "bytes": 24673,
+      "sha256": "8d85e68c9d87697256d8e93e343bf907123036689455b5a6c38e3cab4b14297e"
+    },
+    {
+      "path": "deployed-workers/seoularena-events-public.multipart",
+      "bytes": 28749,
+      "sha256": "f5b1f239d2284f8b7b48112ed4fdfa2c7fc282c0b447b5d4d9e33d17f794f9dd"
+    }
+  ],
+  "recipient": "jinsansung",
+  "recipient_invitation": "pending acceptance",
+  "provider_download_verification": {
+    "status": "passed",
+    "archive_sha256_matches": true,
+    "every_file_sha256_matches": true,
+    "identity": "authenticated repository owner; not impersonating P011"
+  },
+  "public_anonymous_download": {
+    "status": 404,
+    "blocked": true
+  },
+  "note": "DB snapshot includes protected business/participant data and stored auth state. Do not redistribute. No runtime secret values included.",
+  "runtime_secrets_in_archive": false
+}
